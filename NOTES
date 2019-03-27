@@ -1,0 +1,208 @@
+A few changes were mode, starting in Python 3.5 the marshalling format
+has changed and now the filesize is embedded too which means that the first
+12 bytes are just the header before the actual marshalled data (See import.c)
+
+
+https://www.python.org/dev/peps/pep-0488/
+
+:) gvb@ix:python-packages (master) $ for i in *.pyc ; do hexdump -C $i | head -n1 ; done
+00000000  43 34 0d 0a 5b 30 78 5c  e9 12 00 00 e3 f0 f6 e5  |C4..[0x\........|
+00000000  43 34 0d 0a 5b 30 78 5c  15 05 00 00 e3 b0 f4 e5  |C4..[0x\........|
+00000000  43 34 0d 0a fb 6a 38 5c  35 18 00 00 e3 b0 84 3a  |C4...j8\5......:|
+00000000  43 34 0d 0a 5b 30 78 5c  18 67 00 00 e3 e0 d1 e6  |C4..[0x\.g......|
+00000000  43 34 0d 0a 5b 30 78 5c  2d 22 00 00 e3 20 f4 e5  |C4..[0x\-"... ..|
+00000000  43 34 0d 0a 5b 30 78 5c  dc 14 00 00 e3 20 fd e5  |C4..[0x\..... ..|
+00000000  43 34 0d 0a 5c 30 78 5c  fe 13 00 00 e3 70 fb e5  |C4..\0x\.....p..|
+00000000  43 34 0d 0a 5c 30 78 5c  06 39 00 00 e3 b0 fd e5  |C4..\0x\.9......|
+00000000  43 34 0d 0a 5c 30 78 5c  af 4a 00 00 e3 60 ff e5  |C4..\0x\.J...`..|
+00000000  43 34 0d 0a 5c 30 78 5c  54 83 03 00 e3 50 01 bc  |C4..\0x\T....P..|
+00000000  43 34 0d 0a 5c 30 78 5c  ab 60 00 00 e3 40 75 e7  |C4..\0x\.`...@u.|
+00000000  43 34 0d 0a 5d 30 78 5c  46 65 00 00 e3 50 fa e5  |C4..]0x\Fe...P..|
+00000000  43 34 0d 0a 5c 30 78 5c  2e 1c 00 00 e3 30 f9 e5  |C4..\0x\.....0..|
+00000000  43 34 0d 0a 5c 30 78 5c  49 16 00 00 e3 40 7e e7  |C4..\0x\I....@~.|
+00000000  43 34 0d 0a 5c 30 78 5c  17 22 00 00 e3 e0 fa e5  |C4..\0x\."......|
+00000000  43 34 0d 0a 5c 30 78 5c  04 61 01 00 e3 e0 8a e7  |C4..\0x\.a......|
+00000000  43 34 0d 0a 5c 30 78 5c  86 2f 00 00 e3 70 72 e7  |C4..\0x\./...pr.|
+00000000  43 34 0d 0a 5c 30 78 5c  40 2c 00 00 e3 e0 71 e7  |C4..\0x\@,....q.|
+00000000  43 34 0d 0a 5c 30 78 5c  bf 4e 00 00 e3 c0 29 e6  |C4..\0x\.N....).|
+00000000  43 34 0d 0a 2c 40 91 5c  ab 14 00 00 e3 40 fe e5  |C4..,@.\.....@..|
+00000000  43 34 0d 0a 5c 30 78 5c  9c 4f 00 00 e3 30 29 e6  |C4..\0x\.O...0).|
+00000000  43 34 0d 0a 5c 30 78 5c  04 5c 00 00 e3 c0 79 e7  |C4..\0x\.\....y.|
+00000000  43 34 0d 0a 5c 30 78 5c  23 0a 00 00 e3 20 f4 e5  |C4..\0x\#.... ..|
+00000000  43 34 0d 0a 5c 30 78 5c  ad 5a 00 00 e3 c0 49 e7  |C4..\0x\.Z....I.|
+00000000  43 34 0d 0a 5c 30 78 5c  cc 8c 00 00 e3 40 75 e6  |C4..\0x\.....@u.|
+00000000  43 34 0d 0a 5c 30 78 5c  0c 3a 00 00 e3 90 73 e6  |C4..\0x\.:....s.|
+00000000  43 34 0d 0a 5c 30 78 5c  76 29 00 00 e3 60 ff e5  |C4..\0x\v)...`..|
+00000000  43 34 0d 0a 5c 30 78 5c  b4 8d 00 00 e3 b0 4d e7  |C4..\0x\......M.|
+00000000  43 34 0d 0a 5c 30 78 5c  6a 17 00 00 e3 d0 f5 e5  |C4..\0x\j.......|
+00000000  43 34 0d 0a 5c 30 78 5c  58 d1 00 00 e3 a0 78 e7  |C4..\0x\X.....x.|
+00000000  43 34 0d 0a 5c 30 78 5c  6a 33 00 00 e3 60 7f e7  |C4..\0x\j3...`..|
+00000000  43 34 0d 0a 5c 30 78 5c  6f 22 00 00 e3 c0 f9 e5  |C4..\0x\o"......|
+00000000  43 34 0d 0a 5c 30 78 5c  5f 1b 00 00 e3 a0 f8 e5  |C4..\0x\_.......|
+00000000  43 34 0d 0a 5c 30 78 5c  34 3f 00 00 e3 50 fa e7  |C4..\0x\4?...P..|
+00000000  43 34 0d 0a 5c 30 78 5c  07 3b 01 00 e3 a0 08 bc  |C4..\0x\.;......|
+00000000  43 34 0d 0a 5c 30 78 5c  40 01 00 00 e3 40 fe e5  |C4..\0x\@....@..|
+00000000  43 34 0d 0a 5c 30 78 5c  42 47 00 00 e3 40 15 e6  |C4..\0x\BG...@..|
+00000000  43 34 0d 0a 5c 30 78 5c  ff 0a 00 00 e3 00 fc e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  46 83 00 00 e3 b0 f4 b8  |C4..\0x\F.......|
+00000000  43 34 0d 0a 5c 30 78 5c  66 26 00 00 e3 b0 f4 b8  |C4..\0x\f&......|
+00000000  43 34 0d 0a 5c 30 78 5c  5e 0c 00 00 e3 f0 f6 e5  |C4..\0x\^.......|
+00000000  43 34 0d 0a 5c 30 78 5c  57 5c 00 00 e3 20 1d b9  |C4..\0x\W\... ..|
+00000000  43 34 0d 0a 5c 30 78 5c  72 7a 00 00 e3 c0 f0 b9  |C4..\0x\rz......|
+00000000  43 34 0d 0a 5c 30 78 5c  94 12 00 00 e3 90 fc e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  41 1d 00 00 e3 60 f6 e5  |C4..\0x\A....`..|
+00000000  43 34 0d 0a 5c 30 78 5c  6a 17 00 00 e3 10 f8 e5  |C4..\0x\j.......|
+00000000  43 34 0d 0a 5c 30 78 5c  1a 54 00 00 e3 20 fd b9  |C4..\0x\.T... ..|
+00000000  43 34 0d 0a 5c 30 78 5c  06 16 00 00 e3 60 ff e5  |C4..\0x\.....`..|
+00000000  43 34 0d 0a 5c 30 78 5c  6e 4f 00 00 e3 b0 1d b9  |C4..\0x\nO......|
+00000000  43 34 0d 0a 5c 30 78 5c  3d 25 00 00 e3 00 fc e5  |C4..\0x\=%......|
+00000000  43 34 0d 0a 5c 30 78 5c  91 59 00 00 e3 00 f3 b9  |C4..\0x\.Y......|
+00000000  43 34 0d 0a 5c 30 78 5c  c1 13 00 00 e3 60 f6 e5  |C4..\0x\.....`..|
+00000000  43 34 0d 0a 5c 30 78 5c  ad 29 00 00 e3 40 35 bc  |C4..\0x\.)...@5.|
+00000000  43 34 0d 0a 5c 30 78 5c  c9 c7 01 00 e3 10 b8 6d  |C4..\0x\.......m|
+00000000  43 34 0d 0a 5c 30 78 5c  bd 0d 00 00 e3 d0 fe e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  37 23 01 00 e3 50 d1 6d  |C4..\0x\7#...P.m|
+00000000  43 34 0d 0a 5c 30 78 5c  a3 08 00 00 e3 40 f5 e5  |C4..\0x\.....@..|
+00000000  43 34 0d 0a 5c 30 78 5c  c0 14 00 00 e3 60 f6 e5  |C4..\0x\.....`..|
+00000000  43 34 0d 0a 5c 30 78 5c  f4 2d 01 00 e3 10 f8 b9  |C4..\0x\.-......|
+00000000  43 34 0d 0a 5c 30 78 5c  b7 32 00 00 e3 d0 f5 e5  |C4..\0x\.2......|
+00000000  43 34 0d 0a 5c 30 78 5c  04 52 00 00 e3 20 f4 e5  |C4..\0x\.R... ..|
+00000000  43 34 0d 0a 7c 39 54 59  2e 12 00 00 e3 c0 f9 e5  |C4..|9TY........|
+00000000  43 34 0d 0a 5c 30 78 5c  1e 5a 00 00 e3 d0 f5 b9  |C4..\0x\.Z......|
+00000000  43 34 0d 0a 5c 30 78 5c  03 28 00 00 e3 a0 08 6f  |C4..\0x\.(.....o|
+00000000  43 34 0d 0a 5c 30 78 5c  6f 2a 00 00 e3 40 ee b8  |C4..\0x\o*...@..|
+00000000  43 34 0d 0a 5c 30 78 5c  d3 eb 00 00 e3 10 d8 6d  |C4..\0x\.......m|
+00000000  43 34 0d 0a 5c 30 78 5c  96 92 00 00 e3 c0 69 70  |C4..\0x\......ip|
+00000000  43 34 0d 0a 5c 30 78 5c  80 ef 00 00 e3 90 b3 6d  |C4..\0x\.......m|
+00000000  43 34 0d 0a 5c 30 78 5c  8b d9 00 00 e3 c0 70 6f  |C4..\0x\......po|
+00000000  43 34 0d 0a 5c 30 78 5c  d4 22 00 00 e3 d0 fe e5  |C4..\0x\."......|
+00000000  43 34 0d 0a 5c 30 78 5c  43 53 00 00 e3 30 e9 b8  |C4..\0x\CS...0..|
+00000000  43 34 0d 0a 5c 30 78 5c  ea b7 00 00 e3 20 ed b8  |C4..\0x\..... ..|
+00000000  43 34 0d 0a 5c 30 78 5c  ec 7c 00 00 e3 10 08 6f  |C4..\0x\.|.....o|
+00000000  43 34 0d 0a 5c 30 78 5c  36 3c 00 00 e3 40 05 6f  |C4..\0x\6<...@.o|
+00000000  43 34 0d 0a 5c 30 78 5c  7c 51 00 00 e3 b0 1d b9  |C4..\0x\|Q......|
+00000000  43 34 0d 0a 5c 30 78 5c  c4 67 00 00 e3 30 e9 b8  |C4..\0x\.g...0..|
+00000000  43 34 0d 0a 5c 30 78 5c  0d 1c 00 00 e3 80 f7 e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  7e 97 01 00 e3 90 1c 6e  |C4..\0x\~......n|
+00000000  43 34 0d 0a 5c 30 78 5c  4c 22 00 00 e3 90 13 b9  |C4..\0x\L"......|
+00000000  43 34 0d 0a 5c 30 78 5c  56 1c 00 00 e3 40 fe e5  |C4..\0x\V....@..|
+00000000  43 34 0d 0a 5c 30 78 5c  32 6b 00 00 e3 30 19 b9  |C4..\0x\2k...0..|
+00000000  43 34 0d 0a 5c 30 78 5c  c0 3c 00 00 e3 c0 10 6e  |C4..\0x\.<.....n|
+00000000  43 34 0d 0a 5c 30 78 5c  d8 14 00 00 e3 c0 10 b9  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  b7 2e 00 00 e3 c0 f9 e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  ee 4b 00 00 e3 d0 35 6f  |C4..\0x\.K....5o|
+00000000  43 34 0d 0a 5c 30 78 5c  9c 32 00 00 e3 00 fc e5  |C4..\0x\.2......|
+00000000  43 34 0d 0a 5c 30 78 5c  23 9d 00 00 e3 b0 14 6e  |C4..\0x\#......n|
+00000000  43 34 0d 0a 5c 30 78 5c  4b 08 00 00 e3 50 fa e5  |C4..\0x\K....P..|
+00000000  43 34 0d 0a 08 c3 be 59  a8 78 00 00 e3 00 23 4c  |C4.....Y.x....#L|
+00000000  43 34 0d 0a 5c 30 78 5c  b0 ac 00 00 e3 30 d9 6e  |C4..\0x\.....0.n|
+00000000  43 34 0d 0a 5c 30 78 5c  33 6b 00 00 e3 c0 90 6e  |C4..\0x\3k.....n|
+00000000  43 34 0d 0a 5c 30 78 5c  de 68 00 00 e3 50 da 6e  |C4..\0x\.h...P.n|
+00000000  43 34 0d 0a 5c 30 78 5c  8a 4b 00 00 e3 90 fc e5  |C4..\0x\.K......|
+00000000  43 34 0d 0a 5c 30 78 5c  a5 1a 00 00 e3 b0 fd e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  b8 8e 00 00 e3 40 0e 6e  |C4..\0x\.....@.n|
+00000000  43 34 0d 0a 5c 30 78 5c  ef ae 00 00 e3 e0 41 49  |C4..\0x\......AI|
+00000000  43 34 0d 0a 5c 30 78 5c  ae 13 00 00 e3 60 f6 e5  |C4..\0x\.....`..|
+00000000  43 34 0d 0a ac e2 53 59  77 3f 00 00 e3 90 a3 6e  |C4....SYw?.....n|
+00000000  43 34 0d 0a ac e2 53 59  18 09 00 00 e3 60 f6 e5  |C4....SY.....`..|
+00000000  43 34 0d 0a 5c 30 78 5c  13 2e 00 00 e3 70 02 6e  |C4..\0x\.....p.n|
+00000000  43 34 0d 0a 5c 30 78 5c  75 32 00 00 e3 30 90 6e  |C4..\0x\u2...0.n|
+00000000  43 34 0d 0a 5c 30 78 5c  01 01 00 00 e3 20 f4 e5  |C4..\0x\..... ..|
+00000000  43 34 0d 0a 5c 30 78 5c  67 f1 00 00 e3 e0 0a 6e  |C4..\0x\g......n|
+00000000  43 34 0d 0a 5c 30 78 5c  1d 61 00 00 e3 40 05 6e  |C4..\0x\.a...@.n|
+00000000  43 34 0d 0a 5c 30 78 5c  21 6c 01 00 e3 90 ec 48  |C4..\0x\!l.....H|
+00000000  43 34 0d 0a 5c 30 78 5c  98 68 00 00 e3 00 dc 6e  |C4..\0x\.h.....n|
+00000000  43 34 0d 0a 5c 30 78 5c  66 4c 00 00 e3 c0 f9 e5  |C4..\0x\fL......|
+00000000  43 34 0d 0a 5c 30 78 5c  85 bf 00 00 e3 40 0e 6e  |C4..\0x\.....@.n|
+00000000  43 34 0d 0a 5c 30 78 5c  03 0c 00 00 e3 00 fc e5  |C4..\0x\........|
+00000000  43 34 0d 0a 5c 30 78 5c  38 73 00 00 e3 60 06 6e  |C4..\0x\8s...`.n|
+00000000  43 34 0d 0a 5c 30 78 5c  a2 5b 00 00 e3 e0 0a 6e  |C4..\0x\.[.....n|
+00000000  43 34 0d 0a 5c 30 78 5c  12 41 00 00 e3 b0 64 70  |C4..\0x\.A....dp|
+00000000  43 34 0d 0a 5c 30 78 5c  6f 03 00 00 e3 60 f6 e5  |C4..\0x\o....`..|
+00000000  43 34 0d 0a 5c 30 78 5c  a6 22 00 00 e3 f0 06 6e  |C4..\0x\.".....n|
+00000000  43 34 0d 0a 5c 30 78 5c  92 39 01 00 e3 c0 69 49  |C4..\0x\.9....iI|
+00000000  43 34 0d 0a 95 9e c6 5a  52 b6 00 00 e3 d0 65 49  |C4.....ZR.....eI|
+00000000  43 34 0d 0a 9d 47 da 59  05 24 00 00 e3 d0 f5 e5  |C4...G.Y.$......|
+00000000  43 34 0d 0a 5c 30 78 5c  63 1a 00 00 e3 10 f8 e5  |C4..\0x\c.......|
+00000000  43 34 0d 0a 5c 30 78 5c  a3 5d 00 00 e3 e0 01 6e  |C4..\0x\.].....n|
+00000000  43 34 0d 0a 5c 30 78 5c  38 48 00 00 e3 f0 66 70  |C4..\0x\8H....fp|
+00000000  43 34 0d 0a 5c 30 78 5c  f2 4f 00 00 e3 40 0e 6e  |C4..\0x\.O...@.n|
+00000000  43 34 0d 0a 5c 30 78 5c  ff 54 00 00 e3 50 61 70  |C4..\0x\.T...Pap|
+00000000  43 34 0d 0a 70 f8 4d 54  c7 7d 00 00 e3 80 97 6e  |C4..p.MT.}.....n|
+00000000  43 34 0d 0a 5c 30 78 5c  02 2a 01 00 e3 e0 61 4a  |C4..\0x\.*....aJ|
+:) gvb@ix:python-packages (master) $
+
+
+the _marshal comes from pypy
+
+
+
+Python-3.6.8/Python/pythonrun.c
+
+static PyObject *
+run_pyc_file(FILE *fp, const char *filename, PyObject *globals,
+             PyObject *locals, PyCompilerFlags *flags)
+{
+    PyCodeObject *co;
+    PyObject *v;
+    long magic;
+    long PyImport_GetMagicNumber(void);
+
+    magic = PyMarshal_ReadLongFromFile(fp);
+    if (magic != PyImport_GetMagicNumber()) {
+        if (!PyErr_Occurred())
+            PyErr_SetString(PyExc_RuntimeError,
+                       "Bad magic number in .pyc file");
+        goto error;
+    }
+    /* Skip mtime and size */
+    (void) PyMarshal_ReadLongFromFile(fp);
+    (void) PyMarshal_ReadLongFromFile(fp);
+    if (PyErr_Occurred()) {
+        goto error;
+    }
+    v = PyMarshal_ReadLastObjectFromFile(fp);
+    if (v == NULL || !PyCode_Check(v)) {
+        Py_XDECREF(v);
+        PyErr_SetString(PyExc_RuntimeError,
+                   "Bad code object in .pyc file");
+        goto error;
+    }
+    fclose(fp);
+    co = (PyCodeObject *)v;
+    v = PyEval_EvalCode((PyObject*)co, globals, locals);
+    if (v && flags)
+        flags->cf_flags |= (co->co_flags & PyCF_MASK);
+    Py_DECREF(co);
+    return v;
+error:
+    fclose(fp);
+    return NULL;
+}
+
+
+
+
+
+TypeError: name tuples must contain only strings, not 'tuple'
+dispatching ) (41) to TYPE_SMALL_TUPLE
+dispatching N (78) to TYPE_NONE
+dispatching T (84) to TYPE_TRUE
+dispatching Z (90) to TYPE_SHORT_ASCII_INTERNED
+dispatching c (99) to TYPE_CODE
+dispatching g (103) to TYPE_BINARY_FLOAT
+dispatching i (105) to TYPE_INT
+dispatching r (114) to TYPE_REF
+dispatching s (115) to TYPE_STRING
+dispatching z (122) to TYPE_SHORT_ASCII
+:) gvb@ix:litb2 (master) $
+
+:) gvb@ix:litb2 (master) $ cat wut.txt | grep -i DISP | grep TYPE | awk '{print $5}' | sort | uniq
+
+TYPE_CODE
+TYPE_SMALL_TUPLE
+TYPE_STRING
+
+
+looks lioke the first part is fine but then every other code object starts with a different
+variable; maybe there's extra obfuscation going on again?

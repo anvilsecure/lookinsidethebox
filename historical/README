@@ -1,0 +1,81 @@
+------------------------------------------------------------------------------
+
+  !! IMPORTANT NOTICE !!
+
+This directory only contains some older code which worked up until at least the
+mid-2017 timeframe. It's included here as well as the original contents of the
+README copied below for historical interest as it might still be useful to
+someone. Obviously the new 3.x version of the code is, if not directly, then at
+least in spirit based on this historical 2.x code.
+
+If someone still has binaries and older dropbox versions laying around this
+code can be used/modified to decode those Python2.x-based Dropbox versions.
+
+April 2019, Vincent Berg <gvb@anvilventures.com>
+
+------------------------------------------------------------------------------
+
+
+An updated dropbox decoder. Dropbox is based on a modified Python
+interpreter. A couple of years ago (~2011 timeframe) I looked into it and
+managed to dump parts of the source code by injecting a shared object into
+a running Python process. I never finished it as there were some
+circumstances that prevented me from talking about it publicly. Recently I
+found the code back and decided to give it another shot.
+
+This time I managed to find another way by reversing the on-disk encryption
+format for the embedded bytecode pyc files. It turns out that besides
+having a different opcode mapping (as compared to a standard Python 2.7.10
+interpreter) the pyc files have a 4 byte random seed which is fed into an
+obfuscator function. This obfuscated output is then used as the input for a
+Mersenne Twister which is used to generate 4 32-bit values. These values
+serve as the key for the XXTEA algorithm which when implemented properly
+can decrypt the file.
+
+Most of this work is not original as Hagen Fristch did some of the first publicly available work on this at:
+https://github.com/rumpeltux/dropboxdec . Besides that the DLL injection
+technique was demonstrated by Florian Ledoux and Nicolas Ruff at a
+presentation given at Hack.lu in 2012 at: http://archive.hack.lu/2012/Dropbox%20security.pdf
+
+A bit of my code is based on Fritsch' code but I only found out about it
+after I RE'd the algorithm myself using IDA Pro. The opcode mapping tool
+works automatically unlike Fritsch' code.
+
+Assuming standard dependencies (wget, git etc) are installed one can just
+run the ./run.sh. This will then download the dropbox client, a Python
+2.7.10 interpeter, compile the pyc files of the standard python client and
+it will download the uncompyle2 decompiler. Then this is all fed into the
+unpacker.py which will try to reconstruct the opcode map automatically and
+will then use that opcode map to patch the dropbox bytecode before
+decompiling everything.
+
+The endresult should be an output.zip with most of the dropbox Python
+source code properly decompiled. There are some files (some stdlib Python
+files and some dropbox specific files) which cannot be properly decompiled.
+This can be a defiency in the decompiler or in the opcode mapping but most
+of the code seems to look pretty alright. Output from the unpacker will
+look something like this:
+
+$ ./run.sh
+....
+No saved opcode mapping found; try to generate it
+pass one: automatically generate opcode mapping
+1561/1561
+sanitizing reconstructed opcode map:  111 opcodes
+pass two: decrypt files, patch bytecode and decompile
+1561/1561
+successfully decrypted and decompiled: 1388 files
+error while decrypting: 0 files
+error while decompiling: 173 files
+opcode misses: 5 total 0x30 (48) [#5],  0x71 (113) [#10566],  0x8c (140) [#3],  0x6c (108) [#9],  0x8d (141) [#8],  
+
+The cleanup.sh simply throws away the dependencies. The opcode mapping is
+cached and can be hand-edited if necessary (it's a pickled Python dictionary)
+to get maybe even better results. Switching to a different or newer version of
+the uncompyle decompiler might also help. But a roughly ~89% decompilation
+success is not bad and already gives a really good overview of the inner
+workings of dropbox.
+
+Have fun!
+
+Vincent Berg - gvb@anvilventures.com - Sept 2017
