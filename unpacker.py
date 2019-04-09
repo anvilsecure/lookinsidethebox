@@ -10,6 +10,7 @@ import types
 import os
 import marshal
 
+import opcodemap
 import unmarshaller
 
 logger = logging.getLogger(__name__)
@@ -162,50 +163,6 @@ def load_code_with_patching(self):
                           code.co_freevars, code.co_cellvars)
 
 
-class OpcodeMapping:
-    # before using always need to call sanitize()
-    def __init__(self):
-        self.table = {}
-        self.map = {}
-        self.co_len_mismatch = 0
-        self.co_matched = 0
-
-    def _map_co_objects(self, a, b):
-        if len(a.co_code) != len(b.co_code):
-            self.co_len_mismatch += 1
-            return
-        for i, j in zip(a.co_code, b.co_code):
-            v = self.map.setdefault(i, {})
-            v[j] = v.get(j, 0) + 1
-
-    def map_co_objects(self, a, b):
-        self.co_matched += 1
-        self._map_co_objects(a, b)
-        a_c = filter(lambda x: isinstance(x, types.CodeType), a.co_consts)
-        b_c = filter(lambda x: isinstance(x, types.CodeType), b.co_consts)
-        for i, j in zip(a_c, b_c):
-            self.map_co_objects(i, j)
-
-    def sanitize(self):
-        table = {}
-        keys = sorted(self.map.keys())
-        for key in keys:
-            maxcnt = 0
-            for i, count in self.map[key].items():
-                if i == key:
-                    continue
-                if maxcnt < count:
-                    maxcnt = count
-                    table[key] = i
-        self.table = table
-        self.missing = {}
-        return self.table
-
-    def get(self, op):
-        if op not in self.table:
-            self.missing[op] = self.missing.get(op, 0) + 1
-        op_new = self.table.get(op, op)
-        return op_new
 
 
 def decompile_co_object(co):
@@ -219,12 +176,11 @@ def decompile_co_object(co):
     return out.getvalue()
 
 
-def decompile_pycfiles_from_zipfile(zf, files, mapping, limit=-1):
+def decompile_pycfiles_from_zipfile(opc_map, zf, files, limit=-1):
     ii = 0
     for fn in files:
         if fn[-3:] != "pyc":
             continue
-        logger.info("opening %s" % fn)
         with zf.open(fn, "r") as f:
             ii += 1
             if limit > 0 and ii > limit:
@@ -232,7 +188,7 @@ def decompile_pycfiles_from_zipfile(zf, files, mapping, limit=-1):
 
             f.read(12) # XXX should be seek
             um = unmarshaller.Unmarshaller(f.read)
-            um.opcode_mapping = mapping
+            um.opcode_mapping = opc_map
             um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
                                                    "TYPE_CODE")
             co = um.load()
@@ -240,8 +196,7 @@ def decompile_pycfiles_from_zipfile(zf, files, mapping, limit=-1):
             res = decompile_co_object(co)
 
             output_dir = os.path.dirname(fn)
-            if len(output_dir) > 0:
-                os.makedirs("out/%s" % output_dir, exist_ok=True)
+            os.makedirs("out/%s" % output_dir, exist_ok=True)
             with open("out/%s" % fn[:-1], "wb") as outfd:
                 #d = marshal.dumps(co)
                 #outfd.write(b"\x42\x0d\x0d\x0a\x00\x00\x00\x00\x0a\x00\x20\x5c\xb8\x89\x00\x00")
@@ -249,13 +204,11 @@ def decompile_pycfiles_from_zipfile(zf, files, mapping, limit=-1):
 
 
 
-def generate_opcode_mapping_from_zipfile(zf, files, pydir, limit=-1):
-    mapping = OpcodeMapping()
+def generate_opcode_mapping_from_zipfile(opc_map, zf, files, pydir, limit=5):
     ii = 0
     for fn in files:
         if fn[-3:] != "pyc":
             continue
-        logger.info("opening %s" % fn)
         with zf.open(fn, "r") as f:
             ii += 1
             if limit > 0 and ii > limit:
@@ -279,12 +232,11 @@ def generate_opcode_mapping_from_zipfile(zf, files, pydir, limit=-1):
                     orig_co = marshal.loads(data)
                     logger.info("mapping %s to %s" % (remapped_co.co_filename,
                                 orig_co.co_filename))
-                    mapping.map_co_objects(remapped_co, orig_co)
+                    opc_map.map_co_objects(remapped_co, orig_co)
 
             except FileNotFoundError:
+                logger.info("wut")
                 continue
-    mapping.sanitize()
-    return mapping
 
 
 if __name__ == "__main__":
@@ -302,16 +254,19 @@ if __name__ == "__main__":
     parser.add_argument("--python-dir", required=True)
     parser.add_argument("--dropbox-zip", required=True)
     parser.add_argument("--output-file", required=True)
-    parser.add_argument("--opcode-file")
+    parser.add_argument("--db")
+    parser.add_argument("--overwrite", action="store_true")
+    parser.set_defaults(overwrite=False)
     ns = parser.parse_args()
 
-    if not ns.opcode_file:
-        ns.opcode_file = "opcode.db"
+    if not ns.db:
+        ns.db = "opcode.db"
 
-    max_fn = 1000
-
-    with zipfile.PyZipFile(ns.dropbox_zip, "r", zipfile.ZIP_DEFLATED) as zf:
-        mapping = generate_opcode_mapping_from_zipfile(zf, zf.namelist(),
-                                                       ns.python_dir, max_fn)
-        decompile_pycfiles_from_zipfile(zf, zf.namelist(), mapping, max_fn)
+    with opcodemap.OpcodeMapping(ns.db, ns.overwrite) as opc_map:
+        max_fn = 15
+        with zipfile.PyZipFile(ns.dropbox_zip, "r", zipfile.ZIP_DEFLATED) as zf:
+            if not opc_map.loaded_from_fs or ns.overwrite:
+                generate_opcode_mapping_from_zipfile(opc_map, zf, zf.namelist(),
+                        ns.python_dir, max_fn)
+            decompile_pycfiles_from_zipfile(opc_map, zf, zf.namelist(), max_fn)
 
