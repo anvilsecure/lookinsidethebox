@@ -1,10 +1,21 @@
 #!/bin/sh
 
-WGET="wget -O -"
-WGET="curl -L"
 PYTHON="/usr/bin/env python3.6"
 PYVER="3.6.8"
 TMPDIR="./tmp"
+
+# try to find wget or curl
+FETCH=$(which wget)
+if [ -z "$FETCH" ]; then
+	FETCH=$(which curl)
+	if [ -z "$FETCH" ]; then
+		echo "cannot find wget or curl to fetch data";
+		exit 1;
+	fi
+	FETCH="curl -L"
+else
+	FETCH="wget -O -"
+fi
 
 if [ ! -d $TMPDIR ]; then
 	mkdir -p $TMPDIR
@@ -13,12 +24,12 @@ fi
 cd $TMPDIR
 
 if [ ! -d "dropbox-dist" ]; then
-	$WGET "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
+	$FETCH "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf -
 	mv .dropbox-dist dropbox-dist
 fi
 
 if [ ! -d "Python-$PYVER" ]; then
-	$WGET "https://www.python.org/ftp/python/$PYVER/Python-$PYVER.tar.xz" | tar -xJf -
+	$FETCH "https://www.python.org/ftp/python/$PYVER/Python-$PYVER.tar.xz" | tar -xJf -
 	$PYTHON -O -m compileall Python-$PYVER/Lib
 	$PYTHON -OO -m compileall Python-$PYVER/Lib
 	$PYTHON -m compileall Python-$PYVER/Lib
