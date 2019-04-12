@@ -35,12 +35,7 @@ if [ ! -d "Python-$PYVER" ]; then
 	$PYTHON -m compileall Python-$PYVER/Lib
 fi
 
-if [ ! -d "python-uncompyle6" ]; then
-	git clone https://github.com/rocky/python-uncompyle6.git
-fi
-
-PYTHONPATH="$PWD/python-uncompyle6"
-#export PYTHONPATH=$PYTHONPATH
+pip3.6 install uncompyle6
 
 echo "fetched all dependencies...lets run\n"
 
