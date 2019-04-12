@@ -171,8 +171,8 @@ def decompile_co_object(co):
     return out.getvalue()
 
 
-def decompile_pycfiles_from_zipfile(opc_map, zf, files):
-    for fn in files:
+def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
+    for fn in zf.namelist():
         if fn[-3:] != "pyc":
             continue
         with zf.open(fn, "r") as f:
@@ -186,9 +186,10 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, files):
 
             res = decompile_co_object(co)
 
-            output_dir = os.path.dirname(fn)
-            os.makedirs("out/%s" % output_dir, exist_ok=True)
-            with open("out/%s" % fn[:-1], "wb") as outfd:
+            partial_dirname = os.path.dirname(fn)
+            full_dirname = os.path.join(outdir, partial_dirname)
+            os.makedirs(full_dirname, exist_ok=True)
+            with open(os.path.join(full_dirname, fn[:-1]), "wb") as outfd:
                 outfd.write(res.encode("utf-8"))
 
 
@@ -204,15 +205,16 @@ if __name__ == "__main__":
     root.addHandler(handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dropbox-zip", required=True)
-    parser.add_argument("--output-file", required=True)
-    parser.add_argument("--db")
+    parser.add_argument("--dropbox-zip", required=True,
+                        help="zipfile containing the dropbox obfuscated code")
+    parser.add_argument("--output-dir", default="./out",
+                        help="output dir for the decompiled source code "
+                             "(will be created if it doesn't exist)")
+    parser.add_argument("--db", default="opcode.db",
+                        help="opcode database file to use")
     ns = parser.parse_args()
-
-    if not ns.db:
-        ns.db = "opcode.db"
 
     with opcodemap.OpcodeMapping(ns.db, False) as opc_map:
         with zipfile.PyZipFile(ns.dropbox_zip, "r",
                                zipfile.ZIP_DEFLATED) as zf:
-            decompile_pycfiles_from_zipfile(opc_map, zf, zf.namelist())
+            decompile_pycfiles_from_zipfile(opc_map, zf, ns.output_dir)
