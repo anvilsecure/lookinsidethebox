@@ -30,12 +30,12 @@ class OpcodeMapping:
         return self
 
     def __exit__(self, extype, exvalue, traceback):
-        logger.warning("opcode map database is being sanitized and written")
         if not self.overwrite and self.loaded_from_fs:
             # if caller didn't specify a force overwrite and this opcode
             # mapping was loaded from the filesystem don't do anything
             logger.warning("NOT writing opcode map as force overwrite not set")
             return
+        logger.warning("opcode map database is being sanitized and written")
         self.sanitize()
         with open(self.fn, "wb") as fd:
             pickle.dump(self.table, fd)
