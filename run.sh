@@ -1,6 +1,5 @@
 #!/bin/sh
 
-PYTHON="/usr/bin/env python3.6"
 PYVER="3.6.8"
 TMPDIR="./tmp"
 
@@ -30,19 +29,6 @@ fi
 
 if [ ! -d "Python-$PYVER" ]; then
 	$FETCH "https://www.python.org/ftp/python/$PYVER/Python-$PYVER.tar.xz" | tar -xJf -
-	$PYTHON -O -m compileall Python-$PYVER/Lib
-	$PYTHON -OO -m compileall Python-$PYVER/Lib
-	$PYTHON -m compileall Python-$PYVER/Lib
 fi
 
-pip3.6 install uncompyle6
-
-echo "fetched all dependencies...lets run\n"
-
-cd -
-
-CMD="$PYTHON ./unpacker.py --python-dir $TMPDIR/Python-$PYVER/Lib"
-CMD="$CMD --dropbox-zip `find $TMPDIR/dropbox-dist/ -type f -iname \"python-packages*.zip\"`"
-CMD="$CMD --output-file output.zip"
-
-$CMD
+cd ..
