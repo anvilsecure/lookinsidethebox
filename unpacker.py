@@ -191,7 +191,10 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
 
                 ok, res = decompile_co_object(co)
                 if not ok:
+                    logger.warning("Failed to decompile %s" % fn)
                     failed += 1
+                else:
+                    logger.info("Successfully decompiled %s" % fn)
 
                 partial_dirname = os.path.dirname(fn)
                 full_dirname = os.path.join(outdir, partial_dirname)
