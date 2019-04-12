@@ -35,13 +35,14 @@ if [ ! -d "Python-$PYVER" ]; then
 	$PYTHON -m compileall Python-$PYVER/Lib
 fi
 
-if [ ! -d "uncompyle2" ]; then
-	git clone https://github.com/wibiti/uncompyle2.git
-	mv uncompyle2 _uncompyle2
-	mv _uncompyle2/uncompyle2 uncompyle2
+if [ ! -d "python-uncompyle6" ]; then
+	git clone https://github.com/rocky/python-uncompyle6.git
 fi
 
-echo "\n\n\nfetched all dependencies..lets try decompiling\n\n\n"
+PYTHONPATH="$PWD/python-uncompyle6"
+#export PYTHONPATH=$PYTHONPATH
+
+echo "fetched all dependencies...lets run\n"
 
 cd -
 
@@ -49,5 +50,4 @@ CMD="$PYTHON ./unpacker.py --python-dir $TMPDIR/Python-$PYVER/Lib"
 CMD="$CMD --dropbox-zip `find $TMPDIR/dropbox-dist/ -type f -iname \"python-packages*.zip\"`"
 CMD="$CMD --output-file output.zip"
 
-echo $CMD
 $CMD
