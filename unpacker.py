@@ -167,30 +167,43 @@ def decompile_co_object(co):
         debug_opts = {"asm": False, "tree": False, "grammar": False}
         code_deparse(co, out=out, version=3.6, debug_opts=debug_opts)
     except Exception as e:
-        return "Error while trying to decompile\n%s" % (str(e))
-    return out.getvalue()
+        return (False, "Error while trying to decompile\n%s" % (str(e)))
+    return (True, out.getvalue())
 
 
 def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
+    failed = 0
+    processed = 0
     for fn in zf.namelist():
         if fn[-3:] != "pyc":
             continue
         with zf.open(fn, "r") as f:
+            processed += 1
 
-            f.read(12)
-            um = unmarshaller.Unmarshaller(f.read)
-            um.opcode_mapping = opc_map
-            um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
-                                                   "TYPE_CODE")
-            co = um.load()
+            logger.info("Decrypting, patching and decompiling %s" % fn)
+            try:
+                f.read(12)
+                um = unmarshaller.Unmarshaller(f.read)
+                um.opcode_mapping = opc_map
+                um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
+                                                       "TYPE_CODE")
+                co = um.load()
 
-            res = decompile_co_object(co)
+                ok, res = decompile_co_object(co)
+                if not ok:
+                    failed += 1
 
-            partial_dirname = os.path.dirname(fn)
-            full_dirname = os.path.join(outdir, partial_dirname)
-            os.makedirs(full_dirname, exist_ok=True)
-            with open(os.path.join(full_dirname, fn[:-1]), "wb") as outfd:
-                outfd.write(res.encode("utf-8"))
+                partial_dirname = os.path.dirname(fn)
+                full_dirname = os.path.join(outdir, partial_dirname)
+                os.makedirs(full_dirname, exist_ok=True)
+                with open(os.path.join(full_dirname, fn[:-1]), "wb") as outfd:
+                    outfd.write(res.encode("utf-8"))
+
+            except Exception as e:
+                logger.error("Exception %s occured" % str(e))
+                break
+    logger.info("Processed %d files (%d succesfully decompiled, %d failed)" %
+                (processed, processed-failed, failed))
 
 
 if __name__ == "__main__":
