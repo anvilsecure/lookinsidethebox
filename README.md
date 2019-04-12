@@ -15,6 +15,12 @@ pip3 install uncompyle6
 
 # Usage
 
+- Run the included `fetchdeps.sh` bash script. This will fetch the Python source code as well as download the latest version of the Dropbox for Linux tarball.
+
+- 
+
+python3 unpacker.py --dropbox-zip `find ./tmp -type f -iname python-packages-36.zip` --output-file bl
+
 To generate the opcode database use something like the following:
 
 ```

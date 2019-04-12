@@ -8,7 +8,6 @@ import zipfile
 import io
 import types
 import os
-import marshal
 
 import opcodemap
 import unmarshaller
@@ -148,11 +147,9 @@ def load_code_with_patching(self):
     while i < n:
         old = bcode[i]
         new = opcode_map.get(bcode[i])
-        import dis
         if old != 90:
             bcode[i] = new
-        # i = i + (2 if bcode[i] >= 90 else 1)  # HAVE_ARGUMENT
-        i = i + (2)# if bcode[i] >= 90 else 1)  # HAVE_ARGUMENT
+        i = i + (2)  # HAVE_ARGUMENT
         # 144 extended_arg
     bcode = bytes(bcode)
     return types.CodeType(code.co_argcount, code.co_kwonlyargcount,
@@ -161,8 +158,6 @@ def load_code_with_patching(self):
                           code.co_varnames, code.co_filename, code.co_name,
                           code.co_firstlineno, code.co_lnotab,
                           code.co_freevars, code.co_cellvars)
-
-
 
 
 def decompile_co_object(co):
@@ -176,17 +171,13 @@ def decompile_co_object(co):
     return out.getvalue()
 
 
-def decompile_pycfiles_from_zipfile(opc_map, zf, files, limit=-1):
-    ii = 0
+def decompile_pycfiles_from_zipfile(opc_map, zf, files):
     for fn in files:
         if fn[-3:] != "pyc":
             continue
         with zf.open(fn, "r") as f:
-            ii += 1
-            if limit > 0 and ii > limit:
-                break
 
-            f.read(12) # XXX should be seek
+            f.read(12)
             um = unmarshaller.Unmarshaller(f.read)
             um.opcode_mapping = opc_map
             um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
@@ -198,45 +189,7 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, files, limit=-1):
             output_dir = os.path.dirname(fn)
             os.makedirs("out/%s" % output_dir, exist_ok=True)
             with open("out/%s" % fn[:-1], "wb") as outfd:
-                #d = marshal.dumps(co)
-                #outfd.write(b"\x42\x0d\x0d\x0a\x00\x00\x00\x00\x0a\x00\x20\x5c\xb8\x89\x00\x00")
                 outfd.write(res.encode("utf-8"))
-
-
-
-def generate_opcode_mapping_from_zipfile(opc_map, zf, files, pydir, limit=5):
-    ii = 0
-    for fn in files:
-        if fn[-3:] != "pyc":
-            continue
-        with zf.open(fn, "r") as f:
-            ii += 1
-            if limit > 0 and ii > limit:
-                break
-
-            data = f.read(12)
-            um = unmarshaller.Unmarshaller(f.read)
-            um.dispatch[unmarshaller.TYPE_CODE] = (load_code_without_patching,
-                                                   "TYPE_CODE")
-            remapped_co = um.load()
-
-            # XXX need to determine the cpython-37 part automatically
-            libfile = "%s/%s.cpython-36.opt-2.pyc" % (pydir, fn[:-4])
-            libfile = "%s/__pycache__/%s" % (os.path.dirname(libfile),
-                                             os.path.basename(libfile))
-
-            try:
-                with open(libfile, "rb") as f:
-                    f.read(12)
-                    data = f.read()
-                    orig_co = marshal.loads(data)
-                    logger.info("mapping %s to %s" % (remapped_co.co_filename,
-                                orig_co.co_filename))
-                    opc_map.map_co_objects(remapped_co, orig_co)
-
-            except FileNotFoundError:
-                logger.info("wut")
-                continue
 
 
 if __name__ == "__main__":
@@ -251,22 +204,15 @@ if __name__ == "__main__":
     root.addHandler(handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--python-dir", required=True)
     parser.add_argument("--dropbox-zip", required=True)
     parser.add_argument("--output-file", required=True)
     parser.add_argument("--db")
-    parser.add_argument("--overwrite", action="store_true")
-    parser.set_defaults(overwrite=False)
     ns = parser.parse_args()
 
     if not ns.db:
         ns.db = "opcode.db"
 
-    with opcodemap.OpcodeMapping(ns.db, ns.overwrite) as opc_map:
-        max_fn = 15
-        with zipfile.PyZipFile(ns.dropbox_zip, "r", zipfile.ZIP_DEFLATED) as zf:
-            if not opc_map.loaded_from_fs or ns.overwrite:
-                generate_opcode_mapping_from_zipfile(opc_map, zf, zf.namelist(),
-                        ns.python_dir, max_fn)
-            decompile_pycfiles_from_zipfile(opc_map, zf, zf.namelist(), max_fn)
-
+    with opcodemap.OpcodeMapping(ns.db, False) as opc_map:
+        with zipfile.PyZipFile(ns.dropbox_zip, "r",
+                               zipfile.ZIP_DEFLATED) as zf:
+            decompile_pycfiles_from_zipfile(opc_map, zf, zf.namelist())
