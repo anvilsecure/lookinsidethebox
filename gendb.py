@@ -15,10 +15,10 @@ import unpacker
 logger = logging.getLogger(__name__)
 
 
-def generate_opcode_mapping_from_zipfile(opc_map, zf, files, pydir):
+def generate_opcode_mapping_from_zipfile(opc_map, zf, pydir):
     total = 0
     mapped = 0
-    for fn in files:
+    for fn in zf.namelist():
         if fn[-3:] != "pyc":
             continue
         with zf.open(fn, "r") as f:
@@ -91,5 +91,4 @@ if __name__ == "__main__":
                                "r",
                                zipfile.ZIP_DEFLATED) as zf:
 
-            generate_opcode_mapping_from_zipfile(opc_map, zf, zf.namelist(),
-                                                 ns.python_dir)
+            generate_opcode_mapping_from_zipfile(opc_map, zf, ns.python_dir)
