@@ -199,7 +199,7 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
                 partial_dirname = os.path.dirname(fn)
                 full_dirname = os.path.join(outdir, partial_dirname)
                 os.makedirs(full_dirname, exist_ok=True)
-                with open(os.path.join(full_dirname, fn[:-1]), "wb") as outfd:
+                with open(os.path.join(outdir, fn[:-1]), "wb") as outfd:
                     outfd.write(res.encode("utf-8"))
 
             except Exception as e:
