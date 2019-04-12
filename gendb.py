@@ -80,7 +80,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--python-dir", required=True)
     parser.add_argument("--dropbox-zip", required=True)
-    parser.add_argument("--db", required=True)
+    parser.add_argument("--db")
     ns = parser.parse_args()
 
     if not ns.db:
