@@ -10,6 +10,7 @@ import types
 import os
 
 import opcodemap
+import tea
 import unmarshaller
 
 logger = logging.getLogger(__name__)
@@ -20,27 +21,6 @@ def rng(a, b):
     c = (b ^ (b >> 17))
     c = (c ^ (c << 5))
     return (a * 69069 + c + 0x6611CB3B) & 0xffffffff
-
-
-def MX(z, y, sum, key, p, e):
-    return (((z >> 5 ^ y << 2) + (y >> 3 ^ z << 4)) ^
-            ((sum ^ y) + (key[(p & 3) ^ e] ^ z)))
-
-
-def tea_decipher(v, key):
-    DELTA = 0x9e3779b9
-    n = len(v)
-    rounds = 6 + 52//n
-    sum = (rounds*DELTA)
-    y = v[0]
-    while sum != 0:
-        e = (sum >> 2) & 3
-        for p in range(n - 1, -1, -1):
-            z = v[(n + p - 1) % n]
-            v[p] = (v[p] - MX(z, y, sum, key, p, e)) & 0xffffffff
-            y = v[p]
-        sum -= DELTA
-    return v
 
 
 def _int32(x):
@@ -110,7 +90,7 @@ def load_code(self):
     data = list(struct.unpack("<%dL" % words, buf))
 
     # decrypt and convert back to stream of bytes
-    data = tea_decipher(data, key)
+    data = tea.tea_decipher(data, key)
     data = struct.pack("<%dL" % words, *data)
 
     iodata = io.BytesIO(data)
