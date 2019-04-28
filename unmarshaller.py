@@ -57,6 +57,249 @@ def R_REF(func):
     return wrapper
 
 
+# taken from Python-3.6.8/Lib/test/test_code.py
+def isinterned(s):
+    return s is sys.intern(('_' + s + '_')[1:-1])
+
+
+class Marshaller:
+    def __init__(self, writefunc):
+        self._write = writefunc
+
+        # dynamically create the dispatcher by finding all
+        # globals that start with TYPE_ and then mapping
+        # them to associated methods in this class
+        types = [x for x in globals() if x.startswith("TYPE_")]
+        dispatch = {}
+        for _type in types:
+            dispatch[globals()[_type]] = (getattr(Marshaller, "dump_%s" % (_type[5:].lower())), _type)
+
+        self.depth = 0  # XXX should this be here or at the top of the unmarshaller?
+
+    def w_long(self, l):
+        self._write(struct.pack("<L", l))
+
+    def w_object(self, obj):
+        logger.warning("w_object not implemented yet fully, implement flag handling etc")
+
+        self.depth += 1
+        if self.depth > MAX_MARSHAL_STACK_DEPTH:
+            raise Exception("max marshal stack depth exceeded")
+
+        otype = type(obj)
+        if obj == None:
+            self.dump_none(obj)
+        elif otype == bool:
+            if obj == True:
+                self.dump_true()
+            else:
+                self.dump_false()
+        elif obj == StopIteration:
+            self.dump_stopiter(obj)
+        elif obj == Ellipsis:
+            self.dump_ellipsis(obj)
+
+        # We are now in 'complex' object territory as per
+        # marshal.c in CPython which means we need to check
+        # and insert a reference if we have seen this object
+        # before and already outputted it to the stream.
+
+
+        elif otype == types.CodeType:
+            self.dump_code(obj)
+        elif otype == bytes:
+            self.dump_bytes(obj)
+        elif otype == int:
+            self.dump_int(obj)
+        elif otype == tuple:
+            if len(obj) < 256:
+                self.dump_small_tuple(obj)
+            else:
+                self.dump_tuple(obj)
+        elif otype == bytes:
+            self.dump_string(obj)
+        elif otype == str:
+            try:
+                obj.encode("ascii")
+                is_ascii = True
+            except UnicodeDecodeError:
+                is_ascii = False
+            if is_ascii:
+                l = len(obj)
+                if l <  256:
+                    if isinterned(obj):
+                        self.dump_short_ascii_interned(obj)
+                    else:
+                        self.dump_short_ascii(obj)
+                else:
+                    if isinterned(obj):
+                        self.dump_ascii_interned(obj)
+                    else:
+                        self.dump_ascii(obj)
+            else:
+                if isinterned(obj):
+                    self.dump_interned(obj)
+                else:
+                    self.dump_unicode(obj)
+        else:
+            raise NotImplementedError
+
+        self.depth -= 1
+
+    def w_byte(self, b):
+        tmp = b.encode("utf-8")
+        assert(len(tmp) == 1)
+        self._write(tmp)
+
+    def w_type(self, t):
+        logger.warning("flag is always set to zer0 for now")
+        flag = 0
+        self.w_byte(chr(ord(t) | flag))
+
+    def w_size(self, i):
+        if i > SIZE32_MAX:
+            raise Exception("size too big")
+        self.w_long(i)
+
+
+    def dump_bytes(self, obj):
+        # `W_TYPE(TYPE_STRING, p);
+        # w_pstring(PyBytes_AS_STRING(v), PyBytes_GET_SIZE(v), p);
+        self.w_type(TYPE_STRING)
+        self.w_size(len(obj))
+        self._write(obj)
+
+    def dump_null(self, obj):
+        self.w_byte(TYPE_NULL)
+
+    def dump_none(self, obj):
+        self.w_byte(TYPE_NONE)
+
+    def dump_false(self):
+        self.w_byte(TYPE_FALSE)
+
+    def dump_true(self):
+        self.w_byte(TYPE_TRUE)
+
+    def dump_stopiter(self, obj):
+        self.w_byte(TYPE_STOPITER)
+
+    def dump_ellipsis(self, obj):
+        self.w_byte(TYPE_ELLIPSIS)
+
+    def dump_int(self, obj):
+        self.w_type(TYPE_INT)
+        self.w_long(obj)
+
+    def dump_int64(self, obj):
+        raise NotImplementedError
+
+    def dump_float(self, obj):
+        raise NotImplementedError
+
+    def dump_binary_float(self, obj):
+        raise NotImplementedError
+
+    def dump_complex(self, obj):
+        raise NotImplementedError
+
+    def dump_binary_complex(self, obj):
+        raise NotImplementedError
+
+    def dump_long(self, obj):
+        raise NotImplementedError
+
+    def dump_string(self, obj):
+        self.dump_bytes(obj.encode("utf-8"))
+
+    def dump_interned(self, obj):
+        self.w_type(TYPE_INTERNED)
+        enc = obj.encode("utf8", errors="surrogatepass")
+        self.w_size(len(enc))
+        self._write(enc)
+
+    def dump_ref(self, obj):
+        raise NotImplementedError
+
+    def dump_tuple(self, obj):
+        self.w_type(TYPE_TUPLE)
+        self.w_size(len(obj))
+        for tuple_obj in obj:
+            self.w_object(tuple_obj)
+
+    def dump_list(self, obj):
+        raise NotImplementedError
+
+    def dump_dict(self, obj):
+        raise NotImplementedError
+
+    def dump_code(self, co):
+        self.w_type(TYPE_CODE)
+        self.w_long(co.co_argcount)
+        self.w_long(co.co_kwonlyargcount)
+        self.w_long(co.co_nlocals)
+        self.w_long(co.co_stacksize)
+        self.w_long(co.co_flags)
+        self.w_object(co.co_code)
+        self.w_object(co.co_consts)
+        self.w_object(co.co_names)
+        self.w_object(co.co_varnames)
+        self.w_object(co.co_freevars)
+        self.w_object(co.co_cellvars)
+        self.w_object(co.co_filename)
+        self.w_object(co.co_name)
+        self.w_long(co.co_firstlineno)
+        self.w_object(co.co_lnotab)
+
+    def dump_unicode(self, obj):
+        self.w_type(TYPE_UNICODE)
+        enc = obj.encode("utf8", errors="surrogatepass")
+        self.w_size(len(enc))
+        self._write(enc)
+
+    def dump_unknown(self, obj):
+        raise NotImplementedError
+
+    def dump_set(self, obj):
+        raise NotImplementedError
+
+    def dump_frozenset(self, obj):
+        raise NotImplementedError
+
+    def dump_ascii(self, obj):
+        self.w_type(TYPE_ASCII)
+        enc = obj.encode("ascii")
+        self.w_size(len(enc))
+        self._write(enc)
+
+    def dump_ascii_interned(self, obj):
+        self.w_type(TYPE_ASCII_INTERNED)
+        enc = obj.encode("ascii")
+        self.w_size(len(enc))
+        self._write(enc)
+
+    def dump_small_tuple(self, obj):
+        self.w_type(TYPE_SMALL_TUPLE)
+        self.w_byte(chr(len(obj)))
+        for tuple_obj in obj:
+            self.w_object(tuple_obj)
+
+    def dump_short_ascii(self, obj):
+        self.w_type(TYPE_SHORT_ASCII)
+        enc = obj.encode("ascii")
+        self.w_byte(chr(len(enc)))
+        self._write(enc)
+
+    def dump_short_ascii_interned(self, obj):
+        self.w_type(TYPE_SHORT_ASCII_INTERNED)
+        enc = obj.encode("ascii")
+        self.w_byte(chr(len(enc)))
+        self._write(enc)
+
+    def dump(self, obj):
+        self.w_object(obj)
+
+
 class Unmarshaller:
 
     def __init__(self, readfunc):
@@ -405,6 +648,34 @@ if __name__ == "__main__":
         raise Exception("expected argument of PYC file to unmarshal")
 
     with open(sys.argv[1], "rb") as fd:
-        fd.read(16)
+        #hdr = fd.read(16)
+        hdr = fd.read(12)
         u = Unmarshaller(fd.read)
         obj = u.load()
+        print(obj)
+        import marshal
+        #obj = marshal.load(fd)
+        print(obj)
+
+
+
+        import io
+        with io.BytesIO() as out:
+            out.write(hdr)
+            m = Marshaller(out.write)
+            m.dump(obj)
+        
+
+            out.flush()
+            out.seek(0)
+
+            open("_x", "wb").write(out.getbuffer())
+
+            import marshal
+            out.read(len(hdr))
+            u3 = Unmarshaller(out.read)
+            obj3 = u3.load()
+
+            marshal.loads(out.getbuffer()[len(hdr):])
+
+        print("woohoo")
