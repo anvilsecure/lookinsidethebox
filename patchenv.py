@@ -26,6 +26,53 @@ def read_wrapper(self, readfn):
     return fn
 
 
+def dump_code_wrapper(self, co):
+    start_off = self._buf.tell()
+    self.dump_code(co)
+    self._buf.flush()
+    end_off = self._buf.tell()
+    ln = end_off - start_off
+    self._buf.seek(start_off)
+
+    logger.warning("XX: start: %i, end: %i, ln: %i" % (start_off, end_off, ln))
+
+    # make sure to skip past the TYPE_CODE identifier
+    data = self._buf.read(ln)
+    data = data[1:]
+
+    rand = 0x00000000
+    length = len(data)
+    sz = (length + 15) & ~0xf
+    words = sz / 4
+
+    logger.warning("XX: sz: %i" % sz)
+
+    seed = unpacker.rng(rand, length)
+    mt = unpacker.MT19937(seed)
+    key = []
+    for i in range(0, 4):
+        key.append(mt.extract_number())
+
+    # convert data to list of dwords
+    data = data + bytes(sz - length)
+    data = list(struct.unpack("<%dL" % words, data))
+
+    # encrypt and convert back to stream of bytes
+    data = tea.tea_encipher(data, key)
+    data = struct.pack("<%dL" % words, *data)
+
+    assert(len(data)==sz)
+
+    print("BEFORE: %s" % (len(bytes(self._buf.getbuffer()))))
+    print("%i" % len(data))
+    self._buf.seek(start_off+1)
+    self.w_long(rand)
+    self.w_long(length)
+    self._write(data)
+
+
+    print("AFTER: %s" % (len(bytes(self._buf.getbuffer()))))
+
 
 def load_code(self, search, replace):
     rand = self.r_long()
@@ -49,6 +96,7 @@ def load_code(self, search, replace):
     data = tea.tea_decipher(data, key)
     data = struct.pack("<%dL" % words, *data)
 
+    """
     if search in data:
         print(data)
         print(len(data))
@@ -67,6 +115,7 @@ def load_code(self, search, replace):
         bytez.write(ndata)
         print(bytez.tell())
         print(dir(bytez))
+    """
 
 
     iodata = io.BytesIO(data)
@@ -93,13 +142,13 @@ def replace_hash(search, replace):
                               code.co_varnames, code.co_filename, code.co_name,
                               code.co_firstlineno, code.co_lnotab,
                               code.co_freevars, code.co_cellvars)
-        return (search in code.co_consts, ret_co)
+        return ret_co
     return fn
 
 if __name__ == "__main__":
 
     root = logging.getLogger()
-    root.setLevel(logging.WARNING)
+    root.setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
@@ -109,35 +158,50 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dropbox-zip", required=True)
-    parser.add_argument("--db")
     ns = parser.parse_args()
 
-    if not ns.db:
-        ns.db = "opcode.db"
+    ns.output_zip = "out.zip"
 
     hashes = {
-            "dropbox/foundation/environment.pyc": b"e27eae61e774b19f4053361e523c771a92e838026da42c60e6b097d9cb2bc825",
-            "dropbox/webdebugger/server.pyc": b"5df50a9c69f00ac71f873d02ff14f3b86e39600312c0b603cbb76b8b8a433d3f"
+            "dropbox/foundation/environment.pyc": "e27eae61e774b19f4053361e523c771a92e838026da42c60e6b097d9cb2bc825",
+            "dropbox/webdebugger/server.pyc": "5df50a9c69f00ac71f873d02ff14f3b86e39600312c0b603cbb76b8b8a433d3f"
     }
 
+    results = {}
+
     replace_str = bytes(hashlib.sha256(b"ANVILVENTURES").hexdigest(), encoding="ascii")
+    print(replace_str)
 
-    with opcodemap.OpcodeMapping(ns.db) as opc_map:
-        with zipfile.PyZipFile(ns.dropbox_zip,
-                               "r",
-                               zipfile.ZIP_DEFLATED) as zf:
-            for fn in [x for x in zf.namelist() if x in hashes]:
-                with zf.open(fn, "r") as f:
+    with zipfile.PyZipFile(ns.dropbox_zip,
+                           "r",
+                           zipfile.ZIP_DEFLATED) as zf:
+        for fn in [x for x in zf.namelist() if x in hashes]:
+            with zf.open(fn, "r") as f:
 
-                    data = f.read(12)
-                    ulc = unpacker.load_code_without_patching
-                    um = unmarshaller.Unmarshaller(f.read)
-                    um._read = read_wrapper(um, f.read)  # XXX dirty
-                    um.dispatch[unmarshaller.TYPE_CODE] = (replace_hash(hashes[fn], replace_str), "TYPE_CODE")
-                    replaced, co = um.load()
-
+                data = f.read(12)
+                ulc = unpacker.load_code_without_patching
+                um = unmarshaller.Unmarshaller(f.read)
+                um._read = read_wrapper(um, f.read)  # XXX dirty
+                um.dispatch[unmarshaller.TYPE_CODE] = (replace_hash(hashes[fn], replace_str), "TYPE_CODE")
+                co = um.load()
 
 
-                    print(um._read.bytez)
-                    print(dir(um._read.bytez))
-                    print(um._read.bytez.tell())
+                with io.BytesIO() as out:
+                    out.write(data)
+                    m = unmarshaller.Marshaller(out.write, out)
+                    m.dispatch[unmarshaller.TYPE_CODE] = (dump_code_wrapper, "TYPE_CODE")
+                    m.dump(co)
+
+                    out.flush()
+                    results[fn] = bytes(out.getbuffer())
+
+        with zipfile.PyZipFile(ns.output_zip,
+                               "w",
+                               zipfile.ZIP_DEFLATED) as zout:
+            zout.comment = zf.comment
+            for item in zf.infolist():
+                if item.filename not in results:
+                    zout.writestr(item, zf.read(item.filename))
+                    continue
+                zout.writestr(item, results[item.filename])
+

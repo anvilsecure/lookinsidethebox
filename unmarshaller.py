@@ -67,8 +67,9 @@ def _chr(c):
 
 
 class Marshaller:
-    def __init__(self, writefunc):
+    def __init__(self, writefunc, buf=None):
         self._write = writefunc
+        self._buf = buf
 
         # dynamically create the dispatcher by finding all
         # globals that start with TYPE_ and then mapping
@@ -79,20 +80,36 @@ class Marshaller:
             dispatch[globals()[_type]] = (getattr(Marshaller, "dump_%s" % (_type[5:].lower())), _type)
 
         self.depth = 0  # XXX should this be here or at the top of the unmarshaller?
+        self.dispatch = dispatch
+        self.entries = []
+        self.flags = []
 
     def w_long(self, l):
         try:
             self._write(struct.pack("<l", l))
         except:
-            print(l)
             self._write(struct.pack("<L", l))
 
     def w_short(self, s):
         self._write(struct.pack("<H", s))
 
-    def w_object(self, obj):
-        logger.warning("w_object not implemented yet fully, implement flag handling etc")
+    def w_ref(self, obj):
+        refcnt = sys.getrefcount(obj)
+        if obj in self.entries[-1]:
+            idx = self.entries[-1].index(obj)
+            print(idx, len(self.entries[-1]))
+            self.w_byte(TYPE_REF)
+            self.w_long(idx)
+            return True
+        else:
+            self.entries[-1].append(obj)
+            self.flags[-1] = self.flags[-1] | FLAG_REF
+            return False
 
+    def w_object(self, obj):
+
+        self.entries.append([])
+        self.flags.append(0)
         self.depth += 1
         if self.depth > MAX_MARSHAL_STACK_DEPTH:
             raise Exception("max marshal stack depth exceeded")
@@ -115,9 +132,17 @@ class Marshaller:
         # and insert a reference if we have seen this object
         # before and already outputted it to the stream.
 
+        elif self.w_ref(obj):
+            self.depth -= 1
+            self.flags = self.flags[:-1]
+            self.entries = self.entries[:-1]
+            return
 
         elif otype == types.CodeType:
-            self.dump_code(obj)
+            # XXX this is the only one we use the dispatch for so the other
+            # ones cannot be overridden as easily
+            fn, _type = self.dispatch[TYPE_CODE]
+            fn(self, obj)
         elif otype == bytes:
             self.dump_bytes(obj)
         elif otype == int:
@@ -161,6 +186,8 @@ class Marshaller:
             raise NotImplementedError
 
         self.depth -= 1
+        self.flags = self.flags[:-1]
+        self.entries = self.entries[:-1]
 
     def w_byte(self, b):
         if type(b) == str:
@@ -171,9 +198,7 @@ class Marshaller:
             self._write(b)
 
     def w_type(self, t):
-        logger.warning("flag is always set to zer0 for now")
-        flag = 0
-        self.w_byte(_chr(ord(t) | flag))
+        self.w_byte(_chr(ord(t) | self.flags[-1]))
 
     def w_size(self, i):
         if i > SIZE32_MAX:
@@ -446,6 +471,7 @@ class Unmarshaller:
             logger.debug("dispatching %c (%d) to %s" % (co_type, ord(co_type), _type))
             retval = fn(self)
         except KeyError:
+            print("adsf")
             raise ValueError("invalid marshal code: %c (%d)" % (co_type, ord(co_type)))
         self.flags = self.flags[:-1]
 
@@ -541,12 +567,14 @@ class Unmarshaller:
     def load_ref(self):
         n = self.r_long()
         if n < 0 or n >= len(self.refs):
-            raise Exception("bad marshal data (invalid reference: %d)", n)
+            print(self.refs)
+            print(len(self.refs))
+            raise Exception("bad marshal data (invalid reference: %d)" % n)
         logger.debug("loading reference %d" % n)
         obj = self.refs[n]
         if obj is not None:
             return obj
-        raise Exception("bad marshal data (invalid reference: %d)", n)
+        raise Exception("bad marshal data (invalid reference: %d)" % n)
 
     @R_REF
     def load_tuple(self):
