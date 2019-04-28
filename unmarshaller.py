@@ -62,6 +62,10 @@ def isinterned(s):
     return s is sys.intern(('_' + s + '_')[1:-1])
 
 
+def _chr(c):
+    return struct.pack("B", c)
+
+
 class Marshaller:
     def __init__(self, writefunc):
         self._write = writefunc
@@ -77,7 +81,14 @@ class Marshaller:
         self.depth = 0  # XXX should this be here or at the top of the unmarshaller?
 
     def w_long(self, l):
-        self._write(struct.pack("<L", l))
+        try:
+            self._write(struct.pack("<l", l))
+        except:
+            print(l)
+            self._write(struct.pack("<L", l))
+
+    def w_short(self, s):
+        self._write(struct.pack("<H", s))
 
     def w_object(self, obj):
         logger.warning("w_object not implemented yet fully, implement flag handling etc")
@@ -120,41 +131,49 @@ class Marshaller:
             self.dump_string(obj)
         elif otype == str:
             try:
-                obj.encode("ascii")
+                enc = obj.encode("ascii")
                 is_ascii = True
-            except UnicodeDecodeError:
+            except UnicodeEncodeError:
                 is_ascii = False
             if is_ascii:
-                l = len(obj)
-                if l <  256:
+                l = len(enc)
+                if l < 256:
                     if isinterned(obj):
-                        self.dump_short_ascii_interned(obj)
+                        self.dump_short_ascii_interned(enc)
                     else:
-                        self.dump_short_ascii(obj)
+                        self.dump_short_ascii(enc)
                 else:
                     if isinterned(obj):
-                        self.dump_ascii_interned(obj)
+                        self.dump_ascii_interned(enc)
                     else:
-                        self.dump_ascii(obj)
+                        self.dump_ascii(enc)
             else:
                 if isinterned(obj):
                     self.dump_interned(obj)
                 else:
                     self.dump_unicode(obj)
+        elif otype == float:
+            self.dump_binary_float(obj)
+        elif otype == complex:
+            self.dump_binary_complex(obj)
         else:
+            print(otype)
             raise NotImplementedError
 
         self.depth -= 1
 
     def w_byte(self, b):
-        tmp = b.encode("utf-8")
-        assert(len(tmp) == 1)
-        self._write(tmp)
+        if type(b) == str:
+            tmp = b.encode("utf-8")
+            assert(len(tmp) == 1)
+            self._write(tmp)
+        else:
+            self._write(b)
 
     def w_type(self, t):
         logger.warning("flag is always set to zer0 for now")
         flag = 0
-        self.w_byte(chr(ord(t) | flag))
+        self.w_byte(_chr(ord(t) | flag))
 
     def w_size(self, i):
         if i > SIZE32_MAX:
@@ -187,24 +206,48 @@ class Marshaller:
     def dump_ellipsis(self, obj):
         self.w_byte(TYPE_ELLIPSIS)
 
+    def w_pylong(self, x):
+        self.w_type(TYPE_LONG)
+        sign = 1
+        if x < 0:
+            sign = -1
+            x = -x
+        digits = []
+        while x:
+            digits.append(x & 0x7FFF)
+            x = x >> 15
+        self.w_long(len(digits)*sign)
+        for d in digits:
+            self.w_short(d)
+
+
     def dump_int(self, obj):
-        self.w_type(TYPE_INT)
-        self.w_long(obj)
+
+        y = obj >> 31
+        if y and y != -1:
+            self.w_pylong(obj)
+        else:
+            self.w_type(TYPE_INT)
+            self.w_long(obj)
 
     def dump_int64(self, obj):
         raise NotImplementedError
 
-    def dump_float(self, obj):
-        raise NotImplementedError
-
     def dump_binary_float(self, obj):
+        self.w_type(TYPE_BINARY_FLOAT)
+        buf = struct.pack("<d", obj) 
+        self._write(buf)
+
+    def dump_float(self, obj):
         raise NotImplementedError
 
     def dump_complex(self, obj):
         raise NotImplementedError
 
     def dump_binary_complex(self, obj):
-        raise NotImplementedError
+        self.w_type(TYPE_BINARY_COMPLEX)
+        self._write(struct.pack("<d", obj.real))
+        self._write(struct.pack("<d", obj.imag))
 
     def dump_long(self, obj):
         raise NotImplementedError
@@ -266,34 +309,30 @@ class Marshaller:
     def dump_frozenset(self, obj):
         raise NotImplementedError
 
-    def dump_ascii(self, obj):
+    def dump_ascii(self, enc):
         self.w_type(TYPE_ASCII)
-        enc = obj.encode("ascii")
         self.w_size(len(enc))
         self._write(enc)
 
-    def dump_ascii_interned(self, obj):
+    def dump_ascii_interned(self, enc):
         self.w_type(TYPE_ASCII_INTERNED)
-        enc = obj.encode("ascii")
         self.w_size(len(enc))
         self._write(enc)
 
     def dump_small_tuple(self, obj):
         self.w_type(TYPE_SMALL_TUPLE)
-        self.w_byte(chr(len(obj)))
+        self.w_byte(_chr(len(obj)))
         for tuple_obj in obj:
             self.w_object(tuple_obj)
 
-    def dump_short_ascii(self, obj):
+    def dump_short_ascii(self, enc):
         self.w_type(TYPE_SHORT_ASCII)
-        enc = obj.encode("ascii")
-        self.w_byte(chr(len(enc)))
+        self.w_byte(_chr(len(enc)))
         self._write(enc)
 
-    def dump_short_ascii_interned(self, obj):
+    def dump_short_ascii_interned(self, enc):
         self.w_type(TYPE_SHORT_ASCII_INTERNED)
-        enc = obj.encode("ascii")
-        self.w_byte(chr(len(enc)))
+        self.w_byte(_chr(len(enc)))
         self._write(enc)
 
     def dump(self, obj):
@@ -636,7 +675,7 @@ class Unmarshaller:
 if __name__ == "__main__":
     # setup logging to stdout and turn DEBUG level logging on
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.ERROR)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
@@ -652,10 +691,8 @@ if __name__ == "__main__":
         hdr = fd.read(12)
         u = Unmarshaller(fd.read)
         obj = u.load()
-        print(obj)
         import marshal
         #obj = marshal.load(fd)
-        print(obj)
 
 
 
@@ -669,7 +706,6 @@ if __name__ == "__main__":
             out.flush()
             out.seek(0)
 
-            open("_x", "wb").write(out.getbuffer())
 
             import marshal
             out.read(len(hdr))
@@ -677,5 +713,5 @@ if __name__ == "__main__":
             obj3 = u3.load()
 
             marshal.loads(out.getbuffer()[len(hdr):])
-
-        print("woohoo")
+            import sys
+            sys.stdout.write(".")
