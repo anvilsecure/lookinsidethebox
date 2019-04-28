@@ -206,3 +206,85 @@ TYPE_STRING
 
 looks lioke the first part is fine but then every other code object starts with a different
 variable; maybe there's extra obfuscation going on again?
+
+
+_main__ - INFO - Decrypting, patching and decompiling dropbox/client/main.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/main.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/mapreduce.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/mapreduce.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/membership/__init__.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/membership/__init__.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/membership/account_db.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/membership/account_db.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/membership/accounts_info_fetcher.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/membership/accounts_info_fetcher.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/message_queue.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/message_queue.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/mountain/__init__.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/mountain/__init__.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/mountain/error_handler.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/mountain/error_handler.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/mountain/preferences.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/mountain/preferences.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/mountain/unsupported.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/mountain/unsupported.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/mountain/windows.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/mountain/windows.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/move_arbiter.pyc
+Instruction context:
+   
+ 197     218  LOAD_GLOBAL              'ShowResult'
+            220  LOAD_ATTR                'FATAL_ERROR'
+            222  RETURN_VALUE     
+          224_0  COME_FROM           190  '190'
+            224  END_FINALLY      
+          226_0  COME_FROM           182  '182'
+->          226  JUMP_FORWARD        268  'to 268'
+__main__ - WARNING - Failed to decompile dropbox/client/move_arbiter.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/move_dropbox_folder.pyc
+Instruction context:
+   
+ 500      60  LOAD_GLOBAL              'MOVE_ERROR_CODE'
+             62  LOAD_ATTR                'UNRECOVERABLE_ERROR'
+             64  BUILD_MAP_0           0  ''
+             66  BUILD_TUPLE_2         2  ''
+             68  RETURN_VALUE     
+           70_0  COME_FROM            46  '46'
+->           70  END_FINALLY      
+__main__ - WARNING - Failed to decompile dropbox/client/move_dropbox_folder.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/move_to_dropbox.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/move_to_dropbox.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/__init__.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/__init__.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/constants.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/constants.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/controller.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/controller.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/instance_database.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/instance_database.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/move_dropbox.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/move_dropbox.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/multibox.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/multibox.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/selector.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/selector.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/ui_strings.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/ui_strings.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/multiaccount/values.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/multiaccount/values.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/notifications/__init__.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/notifications/__init__.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/notifications/actions.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/notifications/actions.pyc
+__main__ - INFO - Decrypting, patching and decompiling dropbox/client/notifications/actions_factory_interface.pyc
+__main__ - INFO - Successfully decompiled dropbox/client/notifications/actions_factory_interface.pyc
+
+
+__main__ - INFO - Successfully decompiled dropbox/client/features/browse_search/__init__.pyc
+__main__ - INFO - Decrypting, patching and decompiling _bootstrap_overrides.pyc
+__main__ - INFO - Successfully decompiled _bootstrap_overrides.pyc
+__main__ - INFO - Processed 3713 files (3591 succesfully decompiled, 122 failed)
+opcodemap - WARNING - NOT writing opcode map as force overwrite not set
+gvb@ix:litb2 (master) $    
+
+

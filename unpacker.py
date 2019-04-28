@@ -16,6 +16,16 @@ import unmarshaller
 logger = logging.getLogger(__name__)
 
 
+def read_wrapper(self, readfn):
+    def fn(sz):
+        print("READING ", sz)
+        data = readfn(sz)
+        fn.bytez.write(data)
+        return data
+    fn.bytez = io.BytesIO()
+    return fn
+
+
 def rng(a, b):
     b = ((b << 13) ^ b) & 0xffffffff
     c = (b ^ (b >> 17))
@@ -87,6 +97,7 @@ def load_code(self):
 
     # convert data to list of dwords
     buf = self._read(sz)
+    print("%i %i" % (len(buf), sz))
     data = list(struct.unpack("<%dL" % words, buf))
 
     # decrypt and convert back to stream of bytes
@@ -144,7 +155,7 @@ def decompile_co_object(co):
     from uncompyle6 import code_deparse
     out = io.StringIO()
     try:
-        debug_opts = {"asm": False, "tree": False, "grammar": False}
+        debug_opts = {"asm": True, "tree": True, "grammar": True}
         code_deparse(co, out=out, version=3.6, debug_opts=debug_opts)
     except Exception as e:
         return (False, "Error while trying to decompile\n%s" % (str(e)))
@@ -164,6 +175,7 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
             try:
                 f.read(12)
                 um = unmarshaller.Unmarshaller(f.read)
+                um._read = read_wrapper(um, f.read)  # XXX dirty
                 um.opcode_mapping = opc_map
                 um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
                                                        "TYPE_CODE")
@@ -183,6 +195,9 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
                     outfd.write(res.encode("utf-8"))
 
             except Exception as e:
+                failed += 1
+                print(e)
+                logger.error(e)
                 logger.error("Exception %s occured" % str(e))
                 break
     logger.info("Processed %d files (%d succesfully decompiled, %d failed)" %
