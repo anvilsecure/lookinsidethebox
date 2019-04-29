@@ -155,7 +155,7 @@ def decompile_co_object(co):
     from uncompyle6 import code_deparse
     out = io.StringIO()
     try:
-        debug_opts = {"asm": True, "tree": True, "grammar": True}
+        debug_opts = {"asm": False, "tree": False, "grammar": False}
         code_deparse(co, out=out, version=3.6, debug_opts=debug_opts)
     except Exception as e:
         return (False, "Error while trying to decompile\n%s" % (str(e)))
