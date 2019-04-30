@@ -77,27 +77,28 @@ class Marshaller:
         types = [x for x in globals() if x.startswith("TYPE_")]
         dispatch = {}
         for _type in types:
-            dispatch[globals()[_type]] = (getattr(Marshaller, "dump_%s" % (_type[5:].lower())), _type)
+            attrname = "dump_%s" % (_type[5:].lower())
+            dispatch[globals()[_type]] = (getattr(Marshaller, attrname), _type)
 
-        self.depth = 0  # XXX should this be here or at the top of the unmarshaller?
+        self.depth = 0
         self.dispatch = dispatch
         self.entries = []
         self.flags = []
 
     def w_long(self, l):
+        # this is dirty but too lazy to deal with the different corner cases or
+        # write it myself
         try:
             self._write(struct.pack("<l", l))
-        except:
+        except Exception:
             self._write(struct.pack("<L", l))
 
     def w_short(self, s):
         self._write(struct.pack("<H", s))
 
     def w_ref(self, obj):
-        refcnt = sys.getrefcount(obj)
         if obj in self.entries[-1]:
             idx = self.entries[-1].index(obj)
-            print(idx, len(self.entries[-1]))
             self.w_byte(TYPE_REF)
             self.w_long(idx)
             return True
@@ -115,10 +116,10 @@ class Marshaller:
             raise Exception("max marshal stack depth exceeded")
 
         otype = type(obj)
-        if obj == None:
+        if obj is None:
             self.dump_none(obj)
         elif otype == bool:
-            if obj == True:
+            if obj is True:
                 self.dump_true()
             else:
                 self.dump_false()
@@ -138,7 +139,7 @@ class Marshaller:
             self.entries = self.entries[:-1]
             return
 
-        elif otype == types.CodeType:
+        elif isinstance(otype, types.CodeType):
             # XXX this is the only one we use the dispatch for so the other
             # ones cannot be overridden as easily
             fn, _type = self.dispatch[TYPE_CODE]
@@ -161,8 +162,7 @@ class Marshaller:
             except UnicodeEncodeError:
                 is_ascii = False
             if is_ascii:
-                l = len(enc)
-                if l < 256:
+                if len(enc) < 256:
                     if isinterned(obj):
                         self.dump_short_ascii_interned(enc)
                     else:
@@ -182,7 +182,6 @@ class Marshaller:
         elif otype == complex:
             self.dump_binary_complex(obj)
         else:
-            print(otype)
             raise NotImplementedError
 
         self.depth -= 1
@@ -204,7 +203,6 @@ class Marshaller:
         if i > SIZE32_MAX:
             raise Exception("size too big")
         self.w_long(i)
-
 
     def dump_bytes(self, obj):
         # `W_TYPE(TYPE_STRING, p);
@@ -245,7 +243,6 @@ class Marshaller:
         for d in digits:
             self.w_short(d)
 
-
     def dump_int(self, obj):
 
         y = obj >> 31
@@ -260,7 +257,7 @@ class Marshaller:
 
     def dump_binary_float(self, obj):
         self.w_type(TYPE_BINARY_FLOAT)
-        buf = struct.pack("<d", obj) 
+        buf = struct.pack("<d", obj)
         self._write(buf)
 
     def dump_float(self, obj):
@@ -375,11 +372,13 @@ class Unmarshaller:
         types = [x for x in globals() if x.startswith("TYPE_")]
         dispatch = {}
         for _type in types:
-            dispatch[globals()[_type]] = (getattr(Unmarshaller, "load_%s" % (_type[5:].lower())), _type)
+            attrname = "load_%s" % (_type[5:].lower())
+            dispatch[globals()[_type]] = (getattr(Unmarshaller, attrname),
+                                          _type)
 
         self.dispatch = dispatch
         self._opcode_mapping = None
-        self.depth = 0  # XXX should this be here or at the top of the unmarshaller?
+        self.depth = 0
         self.refs = []
         self.flags = []
 
@@ -423,7 +422,8 @@ class Unmarshaller:
         if self.flags[-1]:
             bef = self.refs[idx]
             logger.debug("inserted reference at idx %d" % idx)
-            logger.debug("reference at idx %d before: %s and after: %s" % (idx, bef, obj))
+            logger.debug("reference at idx %d before: %s and after: %s" %
+                         (idx, bef, obj))
             self.refs[idx] = obj
             return self.refs[idx]
 
@@ -440,9 +440,9 @@ class Unmarshaller:
 
     def r_long(self):
         a, b, c, d = tuple(self._read(4))
-        x = a | (b<<8) | (c<<16) | (d<<24)
+        x = a | (b << 8) | (c << 16) | (d << 24)
         if d & 0x80 and x > 0:
-            x = -((1<<32) - x)
+            x = -((1 << 32) - x)
             return int(x)
         else:
             return x
@@ -451,10 +451,11 @@ class Unmarshaller:
         if self.flags[-1] == 0:
             logger.debug("not adding reference to object %s" % (obj,))
             return obj
-        logger.debug("adding reference %d to object %s" % (len(self.refs), obj))
+        logger.debug("adding reference %d to object %s" %
+                     (len(self.refs), obj))
         self.refs.append(obj)
         return obj
-    
+
     def r_object(self):
         code = ord(self.r_byte())
         co_flag = (code & FLAG_REF) & 0xff
@@ -468,11 +469,12 @@ class Unmarshaller:
 
         try:
             fn, _type = self.dispatch[co_type]
-            logger.debug("dispatching %c (%d) to %s" % (co_type, ord(co_type), _type))
+            logger.debug("dispatching %c (%d) to %s" %
+                         (co_type, ord(co_type), _type))
             retval = fn(self)
         except KeyError:
-            print("adsf")
-            raise ValueError("invalid marshal code: %c (%d)" % (co_type, ord(co_type)))
+            raise ValueError("invalid marshal code: %c (%d)" %
+                             (co_type, ord(co_type)))
         self.flags = self.flags[:-1]
 
         self.depth -= 1
@@ -540,17 +542,17 @@ class Unmarshaller:
         # wonky and partially based on the PyPy marshal.py module
         n = self.r_long()
         if n == 0:
-            return long(0)
+            return 0
         sign = 1
         if n < 0:
             sign = -1
             n = -n
-        if n > SIZE32_MAX: # int_32_max
+        if n > SIZE32_MAX:
             raise Exception("bad marshal data: long size out of range")
         x = 0
         for i in range(n):
             d = self.r_short()
-            x = x | (d<<(i*15))
+            x = x | (d << (i*15))
         return x * sign
 
     def r_string(self, n):
@@ -567,8 +569,6 @@ class Unmarshaller:
     def load_ref(self):
         n = self.r_long()
         if n < 0 or n >= len(self.refs):
-            print(self.refs)
-            print(len(self.refs))
             raise Exception("bad marshal data (invalid reference: %d)" % n)
         logger.debug("loading reference %d" % n)
         obj = self.refs[n]
@@ -579,10 +579,10 @@ class Unmarshaller:
     @R_REF
     def load_tuple(self):
         n = self.r_long()
-        l = []
+        l2 = []
         for _ in range(n):
-            l.append(self.r_object())
-        return tuple(l.copy())
+            l2.append(self.r_object())
+        return tuple(l2.copy())
 
     @R_REF
     def load_list(self):
@@ -611,8 +611,9 @@ class Unmarshaller:
         firstlineno = self.r_long()
         lnotab = self.r_object()
         retval = types.CodeType(argcount, kwonlyargcount, nlocals, stacksize,
-                flags, code, consts, names, varnames,
-                filename, name, firstlineno, lnotab, freevars, cellvars)
+                                flags, code, consts, names, varnames,
+                                filename, name, firstlineno, lnotab, freevars,
+                                cellvars)
 
         self.r_ref_insert(idx, retval)
         return retval
@@ -650,10 +651,10 @@ class Unmarshaller:
         idx = self.r_ref_reserve()
         if idx < 0:
             raise Exception("bad marshal data (cannot reserve reference)")
-        l = []
+        l2 = []
         for _ in range(n):
-            l.append(self.r_object())
-        retval = frozenset(l.copy())
+            l2.append(self.r_object())
+        retval = frozenset(l2.copy())
         retval = self.r_ref_insert(idx, retval)
         return retval
 
@@ -674,11 +675,11 @@ class Unmarshaller:
 
     def load_small_tuple(self):
         n = ord(self.r_byte())
-        l = []
+        l2 = []
         idx = self.r_ref_reserve()
         for _ in range(n):
-            l.append(self.r_object())
-        retval = tuple(l)
+            l2.append(self.r_object())
+        retval = tuple(l2)
         self.r_ref_insert(idx, retval)
         return retval
 
@@ -699,7 +700,6 @@ class Unmarshaller:
         return self.load_short_ascii(interned=True)
 
 
-
 if __name__ == "__main__":
     # setup logging to stdout and turn DEBUG level logging on
     root = logging.getLogger()
@@ -715,31 +715,22 @@ if __name__ == "__main__":
         raise Exception("expected argument of PYC file to unmarshal")
 
     with open(sys.argv[1], "rb") as fd:
-        #hdr = fd.read(16)
         hdr = fd.read(12)
         u = Unmarshaller(fd.read)
         obj = u.load()
         import marshal
-        #obj = marshal.load(fd)
-
-
-
         import io
         with io.BytesIO() as out:
             out.write(hdr)
             m = Marshaller(out.write)
             m.dump(obj)
-        
 
             out.flush()
             out.seek(0)
 
-
-            import marshal
             out.read(len(hdr))
             u3 = Unmarshaller(out.read)
             obj3 = u3.load()
 
             marshal.loads(out.getbuffer()[len(hdr):])
-            import sys
             sys.stdout.write(".")

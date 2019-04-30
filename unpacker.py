@@ -13,17 +13,10 @@ import opcodemap
 import tea
 import unmarshaller
 
+if sys.version_info[0] < 3:
+    raise Exception("This module is Python 3 only")
+
 logger = logging.getLogger(__name__)
-
-
-def read_wrapper(self, readfn):
-    def fn(sz):
-        print("READING ", sz)
-        data = readfn(sz)
-        fn.bytez.write(data)
-        return data
-    fn.bytez = io.BytesIO()
-    return fn
 
 
 def rng(a, b):
@@ -97,7 +90,6 @@ def load_code(self):
 
     # convert data to list of dwords
     buf = self._read(sz)
-    print("%i %i" % (len(buf), sz))
     data = list(struct.unpack("<%dL" % words, buf))
 
     # decrypt and convert back to stream of bytes
@@ -175,7 +167,6 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
             try:
                 f.read(12)
                 um = unmarshaller.Unmarshaller(f.read)
-                um._read = read_wrapper(um, f.read)  # XXX dirty
                 um.opcode_mapping = opc_map
                 um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
                                                        "TYPE_CODE")
@@ -196,8 +187,6 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
 
             except Exception as e:
                 failed += 1
-                print(e)
-                logger.error(e)
                 logger.error("Exception %s occured" % str(e))
                 break
     logger.info("Processed %d files (%d succesfully decompiled, %d failed)" %
