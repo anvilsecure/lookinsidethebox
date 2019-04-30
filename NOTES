@@ -288,3 +288,18 @@ opcodemap - WARNING - NOT writing opcode map as force overwrite not set
 gvb@ix:litb2 (master) $    
 
 
+
+
+
+then between versions it changed so they moved it to
+
+build_number/environment.pyc
+
+from dropbox/foundation/environment.pyc
+
+
+               START ::= |- stmts (6)
+__main__ - INFO - Successfully decompiled _bootstrap_overrides.pyc
+__main__ - INFO - Processed 3771 files (3705 succesfully decompiled, 66 failed)
+opcodemap - WARNING - NOT writing opcode map as force overwrite not set
+
