@@ -303,3 +303,14 @@ __main__ - INFO - Successfully decompiled _bootstrap_overrides.pyc
 __main__ - INFO - Processed 3771 files (3705 succesfully decompiled, 66 failed)
 opcodemap - WARNING - NOT writing opcode map as force overwrite not set
 
+gvb@ix:lookinsidethebox (master) $ python3 patchzip.py --dropbox-zip `find . -name python-packages-36.zip`
+__main__ - INFO - rewriting ./tmp/dropbox-dist/dropbox-lnx.x86_64-71.4.108/python-packages-36.zip and outputting to ./out.zip
+root - INFO - replacing e27eae61e774b19f4053361e523c771a92e838026da42c60e6b097d9cb2bc825 with c9a20c76364812a0b34bf7b3c00c2168bfdb433afa2519f0757214287b25fb01 in build_number/environment.pyc at line 11
+root - INFO - replacing 5df50a9c69f00ac71f873d02ff14f3b86e39600312c0b603cbb76b8b8a433d3f with c9a20c76364812a0b34bf7b3c00c2168bfdb433afa2519f0757214287b25fb01 in dropbox/webdebugger/server.pyc at line 272
+gvb@ix:lookinsidethebox (master) $ ls -lha out.zip 
+-rw-r--r--  1 gvb  staff    30M Apr 30 10:54 out.zip
+gvb@ix:lookinsidethebox (master) $ diff -y --suppress-common-lines -W 333 <(unzip -lqq `find . -name python-packages-36.zip` | sort -k 4) <(unzip -lqq out.zip | sort -k 4)
+      693  04-23-2019 12:01   build_number/environment.pyc											      |	      709  04-23-2019 12:01   build_number/environment.pyc
+     9269  04-23-2019 12:01   dropbox/webdebugger/server.pyc											      |	     9669  04-23-2019 12:01   dropbox/webdebugger/server.pyc
+gvb@ix:lookinsidethebox (master) $ 
+
