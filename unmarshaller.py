@@ -139,7 +139,7 @@ class Marshaller:
             self.entries = self.entries[:-1]
             return
 
-        elif isinstance(otype, types.CodeType):
+        elif isinstance(obj, types.CodeType):
             # XXX this is the only one we use the dispatch for so the other
             # ones cannot be overridden as easily
             fn, _type = self.dispatch[TYPE_CODE]
