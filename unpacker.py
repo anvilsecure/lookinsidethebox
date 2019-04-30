@@ -172,17 +172,20 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
                                                        "TYPE_CODE")
                 co = um.load()
 
+                outfn = os.path.join(outdir, fn[:-1])
                 ok, res = decompile_co_object(co)
                 if not ok:
-                    logger.warning("Failed to decompile %s" % fn)
+                    logger.warning("Failed to decompile %s to %s" %
+                                   (fn, outfn))
                     failed += 1
                 else:
-                    logger.info("Successfully decompiled %s" % fn)
+                    logger.info("Successfully decompiled %s to %s" %
+                                (fn, outfn))
 
                 partial_dirname = os.path.dirname(fn)
                 full_dirname = os.path.join(outdir, partial_dirname)
                 os.makedirs(full_dirname, exist_ok=True)
-                with open(os.path.join(outdir, fn[:-1]), "wb") as outfd:
+                with open(outfn, "wb") as outfd:
                     outfd.write(res.encode("utf-8"))
 
             except Exception as e:
