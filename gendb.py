@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import compileall
+import py_compile
 import logging
 import marshal
 import os
@@ -29,14 +29,18 @@ def generate_opcode_mapping_from_zipfile(opc_map, zf, pydir):
             um.dispatch[unmarshaller.TYPE_CODE] = (ulc, "TYPE_CODE")
             remapped_co = um.load()
 
+            total += 1
+
             # bytecompile the .py file to a .pyc file
             pyfn = os.path.join(pydir, fn[:-1])
             optimize = 2  # level is -OO
-            quiet = 2  #
-            compileall.compile_file(pyfn, force=True, quiet=quiet,
-                                    optimize=optimize)
+            try:
+                py_compile.compile(pyfn, cfile=None, dfile=None, doraise=True,
+                                   optimize=optimize)
+                logger.debug("succesfully compiled %s" % pyfn)
+            except Exception:
+                continue
 
-            total += 1
             # load the resulting .pyc file and compare it to the dropbox one
             try:
                 libfile = os.path.join(pydir, "%s.cpython-36.opt-2.pyc" %
@@ -91,4 +95,5 @@ if __name__ == "__main__":
                                "r",
                                zipfile.ZIP_DEFLATED) as zf:
 
-            generate_opcode_mapping_from_zipfile(opc_map, zf, ns.python_dir)
+            pydir = os.path.join(ns.python_dir, "Lib")
+            generate_opcode_mapping_from_zipfile(opc_map, zf, pydir)

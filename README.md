@@ -27,5 +27,5 @@ python3 unpacker.py --dropbox-zip `find ./tmp -type f -iname python-packages-36.
 - To regenerate the opcode mapping database use something like this. Please note that Python 3.6 is a requirement for this to work.
 
 ```
-/usr/bin/env python3.6 gendb.py --dropbox-zip `find ./tmp -type f -iname python-packages-36.zip` --python-dir tmp/Python-3.6.8/Lib/ --db opcode.db
+/usr/bin/env python3.6 gendb.py --dropbox-zip `find ./tmp -type f -iname python-packages-36.zip` --python-dir tmp/Python-3.6.8 --db opcode.db
 ```
