@@ -36,8 +36,6 @@ def dump_code_wrapper(self, co):
     ln = end_off - start_off
     self._buf.seek(start_off)
 
-    logger.warning("XX: start: %i, end: %i, ln: %i" % (start_off, end_off, ln))
-
     # make sure to skip past the TYPE_CODE identifier
     data = self._buf.read(ln)
     data = data[1:]
@@ -46,8 +44,6 @@ def dump_code_wrapper(self, co):
     length = len(data)
     sz = (length + 15) & ~0xf
     words = sz / 4
-
-    logger.warning("XX: sz: %i" % sz)
 
     seed = unpacker.rng(rand, length)
     mt = unpacker.MT19937(seed)
@@ -111,6 +107,10 @@ def load_code(self, search, replace):
 def replace_hash(search, replace):
     def fn(self):
         code = load_code(self, search, replace)
+        if search in code.co_consts:
+            logging.info("replacing %s with %s in %s at line %i" %
+                         (search, replace, code.co_filename,
+                          code.co_firstlineno))
         consts = [x if x != search else replace for x in list(code.co_consts)]
         ret_co = types.CodeType(code.co_argcount, code.co_kwonlyargcount,
                                 code.co_nlocals, code.co_stacksize,
@@ -126,7 +126,7 @@ def replace_hash(search, replace):
 if __name__ == "__main__":
 
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
+    root.setLevel(logging.INFO)
     logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
@@ -135,14 +135,16 @@ if __name__ == "__main__":
     root.addHandler(handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dropbox-zip", required=True)
+    parser.add_argument("--dropbox-zip", required=True,
+                        help="zipfile containing the dropbox obfuscated code")
+    parser.add_argument("--output-zip", default="./out.zip",
+                        help="output zip filename with patched hashes")
     ns = parser.parse_args()
 
-    ns.output_zip = "out.zip"
+    logger.info("rewriting %s and outputting to %s" %
+                (ns.dropbox_zip, ns.output_zip))
 
     hashes = {
-            "dropbox/foundation/environment.pyc":
-            "e27eae61e774b19f4053361e523c771a92e838026da42c60e6b097d9cb2bc825",
             "build_number/environment.pyc":
             "e27eae61e774b19f4053361e523c771a92e838026da42c60e6b097d9cb2bc825",
             "dropbox/webdebugger/server.pyc":
