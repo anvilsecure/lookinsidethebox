@@ -21,11 +21,11 @@ pip3 install uncompyle6
 
 - Execute the following to unpack, decrypt and decompile most of the Dropbox Python source code. It will extract to a default directory named `out`:
 ```
-python3 unpacker.py --dropbox-zip `find ./tmp -type f -iname python-packages-36.zip`
+python3 unpacker.py --dropbox-zip `find . -name python-packages-36.zip`
 ```
 
 - To regenerate the opcode mapping database use something like this. Please note that Python 3.6 is a requirement for this to work.
 
 ```
-/usr/bin/env python3.6 gendb.py --dropbox-zip `find ./tmp -type f -iname python-packages-36.zip` --python-dir tmp/Python-3.6.8 --db opcode.db
+/usr/bin/env python3.6 gendb.py --dropbox-zip `find . -name python-packages-36.zip` --python-dir tmp/Python-3.6.8 --db opcode.db
 ```
