@@ -1,7 +1,7 @@
 Lookinsidethebox
 ================
 
-This tool is just the latest implementation that breaks the encryption and obfuscation layers that Dropbox applies to their modified Python interpreter. It's based on work the author did many, many moons ago as well as public work done by others. For more information please see the blogpost at: XXX
+This tool is just the latest implementation that breaks the encryption and obfuscation layers that Dropbox applies to their modified Python interpreter. It's based on work the author did many, many moons ago as well as public work done by others. For more information please see the [blogpost](http://anvilventures.com/blog/looking-inside-the-box.html)
 
 
 # Requirements
