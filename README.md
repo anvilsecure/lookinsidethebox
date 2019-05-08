@@ -3,6 +3,8 @@ Look inside the box
 
 This tool is just the latest implementation that breaks the encryption and obfuscation layers that Dropbox applies to their modified Python interpreter. It's based on work the author did many, many moons ago as well as public work done by others. For more information please see the [blogpost](http://anvilventures.com/blog/looking-inside-the-box.html).
 
+All this assumes that current versions of the Dropbox Linux client keep being based on Python 3.6. Otherwise work might have to be done to change this to Python 3.7 by adjusting the commands. Of course if Dropbox changes their encryption and obfuscation schemes one will be out of luck too and more work will have to be done to get all this working again.
+
 
 # Requirements
 
