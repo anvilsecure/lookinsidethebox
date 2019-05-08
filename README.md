@@ -1,7 +1,7 @@
-Lookinsidethebox
+Look inside the box
 ================
 
-This tool is just the latest implementation that breaks the encryption and obfuscation layers that Dropbox applies to their modified Python interpreter. It's based on work the author did many, many moons ago as well as public work done by others. For more information please see the [blogpost](http://anvilventures.com/blog/looking-inside-the-box.html)
+This tool is just the latest implementation that breaks the encryption and obfuscation layers that Dropbox applies to their modified Python interpreter. It's based on work the author did many, many moons ago as well as public work done by others. For more information please see the [blogpost](http://anvilventures.com/blog/looking-inside-the-box.html).
 
 
 # Requirements
@@ -24,8 +24,23 @@ pip3 install uncompyle6
 python3 unpacker.py --dropbox-zip `find . -name python-packages-36.zip`
 ```
 
-- To regenerate the opcode mapping database use something like this. Please note that Python 3.6 is a requirement for this to work.
+- To regenerate the opcode mapping database use something like this. Please note that _Python 3.6 is a requirement_ for this to work.
 
 ```
-/usr/bin/env python3.6 gendb.py --dropbox-zip `find . -name python-packages-36.zip` --python-dir tmp/Python-3.6.8 --db opcode.db
+python3.6 gendb.py --dropbox-zip `find . -name python-packages-36.zip` --python-dir tmp/Python-3.6.8 --db opcode.db
+```
+
+- To patch the ZIP file in the Dropbox distribution and rewrite the pyc files such that the SHA-256 hashes in there are known SHA-256 hashes use the following to rewrite and inject code into the zip.
+
+```
+python3 patchzip.py --dropbox-zip `find . -name python-packages-36.zip` --output-zip out.zip
+mv out.zip ~/.dropbox-dist/dropbox-lnx_64-71.4.108/python-packages-36.zip
+~/.dropbox-dist/dropbox-lnx_64-71.4.108/dropbox
+```
+
+- To set the environment variables to enable hidden Dropbox functionality see the `setenv.py` script. For more information on this please see the [blogpost](http://anvilventures.com/blog/looking-inside-the-box.html) again. Modify at will and then use it like this to setup the environment and run dropbox.
+
+```
+eval `python3 setenv.py`
+~/.dropbox-dist/dropbox-lnx_64-71.4.108/dropbox
 ```
