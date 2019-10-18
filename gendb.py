@@ -23,7 +23,7 @@ def generate_opcode_mapping_from_zipfile(opc_map, zf, pydir):
             continue
         with zf.open(fn, "r") as f:
 
-            data = f.read(12)
+            data = f.read(16)
             ulc = unpacker.load_code_without_patching
             um = unmarshaller.Unmarshaller(f.read)
             um.dispatch[unmarshaller.TYPE_CODE] = (ulc, "TYPE_CODE")
@@ -43,13 +43,13 @@ def generate_opcode_mapping_from_zipfile(opc_map, zf, pydir):
 
             # load the resulting .pyc file and compare it to the dropbox one
             try:
-                libfile = os.path.join(pydir, "%s.cpython-36.opt-2.pyc" %
+                libfile = os.path.join(pydir, "%s.cpython-37.opt-2.pyc" %
                                        (fn[:-4]))
                 libfile = os.path.join(os.path.dirname(libfile),
                                        "__pycache__",
                                        os.path.basename(libfile))
                 with open(libfile, "rb") as f:
-                    f.read(12)
+                    f.read(16)
                     data = f.read()
                     orig_co = marshal.loads(data)
                     logger.info("mapping %s to %s" % (remapped_co.co_filename,
@@ -67,9 +67,9 @@ def generate_opcode_mapping_from_zipfile(opc_map, zf, pydir):
 if __name__ == "__main__":
 
     try:
-        assert(sys.version_info.major == 3 and sys.version_info.minor == 6)
+        assert(sys.version_info.major == 3 and sys.version_info.minor == 7)
     except AssertionError:
-        print("Only Python 3.6.x is supported to generate the opcode db")
+        print("Only Python 3.7.x is supported to generate the opcode db")
         sys.exit(1)
 
     root = logging.getLogger()

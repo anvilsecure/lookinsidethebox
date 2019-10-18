@@ -715,7 +715,7 @@ if __name__ == "__main__":
         raise Exception("expected argument of PYC file to unmarshal")
 
     with open(sys.argv[1], "rb") as fd:
-        hdr = fd.read(12)
+        hdr = fd.read(16)
         u = Unmarshaller(fd.read)
         obj = u.load()
         import marshal

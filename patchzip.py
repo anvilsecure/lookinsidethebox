@@ -161,7 +161,7 @@ if __name__ == "__main__":
         for fn in [x for x in zf.namelist() if x in hashes]:
             with zf.open(fn, "r") as f:
 
-                data = f.read(12)
+                data = f.read(16)
                 ulc = unpacker.load_code_without_patching
                 um = unmarshaller.Unmarshaller(f.read)
                 um._read = read_wrapper(um, f.read)  # XXX dirty

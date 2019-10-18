@@ -148,7 +148,7 @@ def decompile_co_object(co):
     out = io.StringIO()
     try:
         debug_opts = {"asm": False, "tree": False, "grammar": False}
-        code_deparse(co, out=out, version=3.6, debug_opts=debug_opts)
+        code_deparse(co, out=out, version=3.7, debug_opts=debug_opts)
     except Exception as e:
         return (False, "Error while trying to decompile\n%s" % (str(e)))
     return (True, out.getvalue())
@@ -165,7 +165,7 @@ def decompile_pycfiles_from_zipfile(opc_map, zf, outdir):
 
             logger.info("Decrypting, patching and decompiling %s" % fn)
             try:
-                f.read(12)
+                f.read(16)
                 um = unmarshaller.Unmarshaller(f.read)
                 um.opcode_mapping = opc_map
                 um.dispatch[unmarshaller.TYPE_CODE] = (load_code_with_patching,
@@ -206,6 +206,20 @@ if __name__ == "__main__":
     formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root.addHandler(handler)
+
+    import uncompyle6.version
+    parts = uncompyle6.version.VERSION.split(".")
+    assert(len(parts) == 3)
+    try:
+        parts = [int(i) for i in parts]
+    except Exception:
+        logger.fatal("couldn't figure out uncompyle6 version installed")
+        sys.exit(1)
+    if not ((parts[0] == 3 and parts[1] >= 5) or parts[0] > 3):
+        logger.fatal("uncompyle6 must be at least version 3.5.0")
+        logger.fatal("upgrade the package: pip3 install uncompyle6 --upgrade")
+        sys.exit(1)
+    logger.info("uncompyle6 is at least version 3.5.x")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dropbox-zip", required=True,

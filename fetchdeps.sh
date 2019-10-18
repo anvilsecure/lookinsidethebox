@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PYVER="3.6.8"
+PYVER="3.7.4"
 TMPDIR="./tmp"
 
 # try to find wget or curl
