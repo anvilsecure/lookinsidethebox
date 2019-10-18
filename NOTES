@@ -314,3 +314,13 @@ gvb@ix:lookinsidethebox (master) $ diff -y --suppress-common-lines -W 333 <(unzi
      9269  04-23-2019 12:01   dropbox/webdebugger/server.pyc											      |	     9669  04-23-2019 12:01   dropbox/webdebugger/server.pyc
 gvb@ix:lookinsidethebox (master) $ 
 
+
+
+
+gvb@ix:lookinsidethebox (master) $ uncompyle6 --version
+uncompyle6 3.2.6
+gvb@ix:lookinsidethebox (master) $ 
+
+
+
+check if updating uncompyle6 to a newer version might help with decompiling the new versions properly.
