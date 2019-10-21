@@ -147,8 +147,6 @@ if __name__ == "__main__":
     hashes = {
             "build_number/environment.pyc":
             "e27eae61e774b19f4053361e523c771a92e838026da42c60e6b097d9cb2bc825",
-            "dropbox/webdebugger/server.pyc":
-            "5df50a9c69f00ac71f873d02ff14f3b86e39600312c0b603cbb76b8b8a433d3f"
     }
 
     results = {}
