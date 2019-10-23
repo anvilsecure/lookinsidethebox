@@ -324,3 +324,42 @@ gvb@ix:lookinsidethebox (master) $
 
 
 check if updating uncompyle6 to a newer version might help with decompiling the new versions properly.
+
+
+
+
+sample error in _compat_pickle.py
+
+Instruction context:
+
+  50      82  LOAD_STR                 'collections.abc'
+             84  LOAD_CONST               ('__builtin__', 'copy_reg', 'Queue', 'SocketServer', 'ConfigParser', 'repr', 'tkFileDialog', 'tkSimpleDialog', 'tkColorChooser', 'tkCommonDialog', 'Dialog', 'Tkdnd', 'tkFont', 'tkMessageBox', 'ScrolledText', 'Tkconstants', 'Tix', 'ttk', 'Tkinter', 'markupbase', '_winreg', 'thread', 'dummy_thread', 'dbhash', 'dumbdbm', 'dbm', 'gdbm', 'xmlrpclib', 'SimpleXMLRPCServer', 'httplib', 'htmlentitydefs', 'HTMLParser', 'Cookie', 'cookielib', 'BaseHTTPServer', 'test.test_support', 'commands', 'urlparse', 'robotparser', 'urllib2', 'anydbm', '_abcoll')
+->           86  <252>                42  ''
+             88  STORE_NAME               IMPORT_MAPPING
+__main__ - WARNING - Failed to decompile _compat_pickle.pyc to ./out/_compat_pickle.py
+Exitting
+opcodemap - WARNING - NOT writing opcode map as force overwrite not set
+
+
+compared to using vanilla python 3.7
+
+>>> s = open("./tmp/Python-3.7.4/Lib/__pycache__/_compat_pickle.cpython-37.opt-2.pyc", "rb").read()
+>>> import marshal
+>>> import dis
+>>> k=marshal.loads(s[16:])
+>>> dis.dis(k)
+...
+  9           0 LOAD_CONST               0 ('builtins')
+ 49          80 LOAD_CONST              40 ('dbm')
+
+ 50          82 LOAD_CONST              41 ('collections.abc')
+             84 LOAD_CONST              42 (('__builtin__', 'copy_reg', 'Queue', 'SocketServer', 'ConfigParser', 'repr', 'tkFileDialog', 'tkSimpleDialog', 'tkColorChooser', 'tkCommonDialog', 'Dialog', 'Tkdnd', 'tkFont', 'tkMessageBox', 'ScrolledText', 'Tkconstants', 'Tix', 'ttk', 'Tkinter', 'markupbase', '_winreg', 'thread', 'dummy_thread', 'dbhash', 'dumbdbm', 'dbm', 'gdbm', 'xmlrpclib', 'SimpleXMLRPCServer', 'httplib', 'htmlentitydefs', 'HTMLParser', 'Cookie', 'cookielib', 'BaseHTTPServer', 'test.test_support', 'commands', 'urlparse', 'robotparser', 'urllib2', 'anydbm', '_abcoll'))
+             86 BUILD_CONST_KEY_MAP     42
+             88 STORE_NAME               0 (IMPORT_MAPPING)
+
+ 58          90 LOAD_CONST              43 (('builtins', 'range'))
+
+
+
+
+

@@ -35,6 +35,10 @@ class OpcodeMapping:
             # mapping was loaded from the filesystem don't do anything
             logger.warning("NOT writing opcode map as force overwrite not set")
             return
+
+        logger.warning("stats: co_len_mismatch=%i, co_matched=%i" %
+                       (self.co_len_mismatch, self.co_matched))
+
         logger.warning("opcode map database is being sanitized and written")
         self.sanitize()
         with open(self.fn, "wb") as fd:
@@ -44,7 +48,11 @@ class OpcodeMapping:
         if len(a.co_code) != len(b.co_code):
             self.co_len_mismatch += 1
             return
+        n = 0
         for i, j in zip(a.co_code, b.co_code):
+            n += 1
+            if n % 2 == 0:
+                continue
             v = self.map.setdefault(i, {})
             v[j] = v.get(j, 0) + 1
 
