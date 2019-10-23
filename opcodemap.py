@@ -83,3 +83,6 @@ class OpcodeMapping:
             self.missing[op] = self.missing.get(op, 0) + 1
         op_new = self.table.get(op, op)
         return op_new
+
+    def reverse_mapping(self):
+        return dict((val, key) for key, val in self.table.items())
