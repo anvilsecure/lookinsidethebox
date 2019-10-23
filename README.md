@@ -50,6 +50,26 @@ mv out.zip ~/.dropbox-dist/dropbox-lnx_64-71.4.108/python-packages-37.zip
 ~/.dropbox-dist/dropbox-lnx_64-71.4.108/dropbox
 ```
 
+- To dump the contents of the opcode mapping run the following.
+
+```
+python3 checkdb.py --db opcodemap.db
+```
+
+That will yield something like the following:
+```
+...
+| ============================== | ======= | ======= |
+| OPCODE                         |  PYTHON | DROPBOX |
+| ============================== | ======= | ======= |
+| POP_TOP                        |       1 |      24 |
+| ROT_TWO                        |       2 |       1 |
+| ROT_THREE                      |       3 |      83 |
+| DUP_TOP                        |       4 |      66 |
+| UNARY_POSITIVE                 |      10 |      77 |
+...
+```
+
 - To set the environment variables to enable hidden Dropbox functionality see the `setenv.py` script. For more information on this please see the [blogpost](http://anvilventures.com/blog/looking-inside-the-box.html) again. Modify at will and then use it like this to setup the environment and run dropbox.
 
 ```
