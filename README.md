@@ -7,10 +7,14 @@ This tool is just the latest implementation that breaks the encryption and obfus
 ## May, 2019
 Initial release.
 
-## October 18th, 2019
-The code was updated to regenerate the opcode database using Python 3.7. It now also checks for the version
-of uncompyle6 being installed (>= 3.5.x) such that it gives an error when uncompyle6 is installed but is
-very outdated. That seems to do the trick.
+## October, 2019
+The code was updated to regenerate the opcode database using Python 3.7. It now
+also checks for the version of uncompyle6 being installed (>= 3.5.x) such that
+it gives an error when uncompyle6 is installed but is very outdated. Several
+bugs were fixed in the generation of the opcode mapping. Thanks to
+[@slinkinone](https://github.com/slinkinone) for sending me e-mails and helping
+me out with debugging some of the issues.
+
 
 # Requirements
 
