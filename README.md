@@ -31,12 +31,15 @@ pip3 install uncompyle6
 
 - Run the included `fetchdeps.sh` bash script. This will fetch the Python source code as well as download the latest version of the Dropbox for Linux tarball. The Python source code is only needed if one wants to regenerate the opcode database.
 
+- Please note that _Python 3.7 is a requirement_ for **BOTH** of the following calls to work as changes were made to `>=3.8` underlying code types etc.
+
 - Execute the following to unpack, decrypt and decompile most of the Dropbox Python source code. It will extract to a default directory named `out`:
 ```
 python3 unpacker.py --dropbox-zip `find . -name python-packages-37.zip`
 ```
 
-- To regenerate the opcode mapping database use something like this. Please note that _Python 3.7 is a requirement_ for this to work.
+- To regenerate the opcode mapping database use something like this.
+
 
 ```
 find . -name python-packages-37.zip | xargs python3.7 gendb.py --python-dir tmp/Python-3.7.4/ --db opcode.db --dropbox-zip
